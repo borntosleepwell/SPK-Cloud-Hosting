@@ -1,40 +1,125 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { calculateELECTRE, generateDummyData } from "../utils/electre";
 
+const DEFAULT_ALTERNATIVES = 4;
+const DEFAULT_CRITERIA = 3;
+
+const createMatrix = (rowCount, colCount, existingMatrix = []) =>
+  Array.from({ length: rowCount }, (_, rowIdx) =>
+    Array.from({ length: colCount }, (_, colIdx) => existingMatrix[rowIdx]?.[colIdx] ?? 0)
+  );
+
+const resizeList = (length, existingList, fallback) =>
+  Array.from({ length }, (_, idx) => existingList[idx] ?? fallback(idx));
+
+const formatNumber = (value, digits = 3) =>
+  Number.isInteger(value) ? value.toString() : Number(value).toFixed(digits);
+
+function MatrixTable({ title, matrix, digits = 3, tone = "emerald" }) {
+  const color = tone === "cyan" ? "text-cyan-600" : "text-emerald-600";
+
+  return (
+    <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl overflow-x-auto">
+      <h4 className={`${color} font-bold mb-4`}>{title}</h4>
+      <table className="w-full text-xs text-center">
+        <tbody>
+          {matrix.map((row, i) => (
+            <tr key={i}>
+              {row.map((val, j) => (
+                <td key={j} className="p-2 border border-gray-200 text-gray-700">
+                  {formatNumber(val, digits)}
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Calculator() {
-  const [alternatives, setAlternatives] = useState(4);
-  const [criteria, setCriteria] = useState(3);
-  const [matrix, setMatrix] = useState([]);
-  const [weights, setWeights] = useState([]);
-  const [altNames, setAltNames] = useState([]);
-  const [critNames, setCritNames] = useState([]);
+  const [alternatives, setAlternatives] = useState(DEFAULT_ALTERNATIVES);
+  const [criteria, setCriteria] = useState(DEFAULT_CRITERIA);
+  const [matrix, setMatrix] = useState(createMatrix(DEFAULT_ALTERNATIVES, DEFAULT_CRITERIA));
+  const [weights, setWeights] = useState(Array(DEFAULT_CRITERIA).fill(1));
+  const [costBenefit, setCostBenefit] = useState(Array(DEFAULT_CRITERIA).fill("benefit"));
+  const [altNames, setAltNames] = useState(
+    resizeList(DEFAULT_ALTERNATIVES, [], (idx) => `Alternatif ${idx + 1}`)
+  );
+  const [critNames, setCritNames] = useState(
+    resizeList(DEFAULT_CRITERIA, [], (idx) => `Kriteria ${idx + 1}`)
+  );
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const dummy = generateDummyData(alternatives, criteria);
-    setMatrix(dummy.matrix);
-    setWeights(dummy.weights);
-    setAltNames(dummy.altNames);
-    setCritNames(dummy.critNames);
+  const resizeForm = (nextAlternatives, nextCriteria) => {
+    setMatrix((currentMatrix) => createMatrix(nextAlternatives, nextCriteria, currentMatrix));
+    setWeights((currentWeights) => resizeList(nextCriteria, currentWeights, () => 1));
+    setCostBenefit((currentTypes) =>
+      resizeList(nextCriteria, currentTypes, () => "benefit")
+    );
+    setAltNames((currentNames) =>
+      resizeList(nextAlternatives, currentNames, (idx) => `Alternatif ${idx + 1}`)
+    );
+    setCritNames((currentNames) =>
+      resizeList(nextCriteria, currentNames, (idx) => `Kriteria ${idx + 1}`)
+    );
     setResult(null);
-  }, [alternatives, criteria]);
+  };
+
+  const clampCount = (value) => Math.min(10, Math.max(2, parseInt(value) || 2));
+
+  const handleAlternativeCountChange = (value) => {
+    const nextAlternatives = clampCount(value);
+    setAlternatives(nextAlternatives);
+    resizeForm(nextAlternatives, criteria);
+  };
+
+  const handleCriteriaCountChange = (value) => {
+    const nextCriteria = clampCount(value);
+    setCriteria(nextCriteria);
+    resizeForm(alternatives, nextCriteria);
+  };
 
   const handleMatrixChange = (altIdx, critIdx, value) => {
     const newMatrix = matrix.map((row, i) =>
       i === altIdx
-        ? row.map((val, j) => (j === critIdx ? parseFloat(value) || 0 : val))
+        ? row.map((val, j) => (j === critIdx ? value : val))
         : row
     );
     setMatrix(newMatrix);
+    setResult(null);
+  };
+
+  const handleMatrixBlur = (altIdx, critIdx) => {
+    setMatrix((currentMatrix) =>
+      currentMatrix.map((row, i) =>
+        i === altIdx
+          ? row.map((val, j) => (j === critIdx && val === "" ? 0 : val))
+          : row
+      )
+    );
   };
 
   const handleWeightChange = (critIdx, value) => {
     const newWeights = weights.map((w, i) =>
-      i === critIdx ? parseFloat(value) || 0 : w
+      i === critIdx ? value : w
     );
     setWeights(newWeights);
+    setResult(null);
+  };
+
+  const handleWeightBlur = (critIdx) => {
+    setWeights((currentWeights) =>
+      currentWeights.map((weight, i) => (i === critIdx && weight === "" ? 0 : weight))
+    );
+  };
+
+  const handleCostBenefitChange = (critIdx, value) => {
+    setCostBenefit(costBenefit.map((type, i) => (i === critIdx ? value : type)));
+    setResult(null);
   };
 
   const handleNameChange = (type, idx, value) => {
@@ -43,14 +128,23 @@ export default function Calculator() {
     } else {
       setCritNames(critNames.map((name, i) => (i === idx ? value : name)));
     }
+    setResult(null);
   };
 
   const handleCalculate = async () => {
     setLoading(true);
     try {
-      const sumWeights = weights.reduce((a, b) => a + b, 0);
-      const normalizedWeights = weights.map((w) => w / sumWeights);
-      const res = calculateELECTRE(matrix, normalizedWeights);
+      const numericWeights = weights.map((weight) => Number(weight) || 0);
+      const numericMatrix = matrix.map((row) =>
+        row.map((value) => Number(value) || 0)
+      );
+      const sumWeights = numericWeights.reduce((a, b) => a + b, 0);
+      if (sumWeights <= 0) {
+        throw new Error("Total bobot harus lebih dari 0.");
+      }
+      setMatrix(numericMatrix);
+      setWeights(numericWeights);
+      const res = calculateELECTRE(numericMatrix, numericWeights, costBenefit);
       setResult(res);
     } catch (error) {
       alert("Error: " + error.message);
@@ -62,8 +156,16 @@ export default function Calculator() {
     const dummy = generateDummyData(alternatives, criteria);
     setMatrix(dummy.matrix);
     setWeights(dummy.weights);
+    setCostBenefit(Array(criteria).fill("benefit"));
     setAltNames(dummy.altNames);
     setCritNames(dummy.critNames);
+    setResult(null);
+  };
+
+  const handleClearInput = () => {
+    setMatrix(createMatrix(alternatives, criteria));
+    setWeights(Array(criteria).fill(1));
+    setCostBenefit(Array(criteria).fill("benefit"));
     setResult(null);
   };
 
@@ -105,7 +207,8 @@ export default function Calculator() {
               min="2"
               max="10"
               value={alternatives}
-              onChange={(e) => setAlternatives(parseInt(e.target.value) || 2)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => handleAlternativeCountChange(e.target.value)}
               className="w-full px-4 py-3 bg-white border-2 border-emerald-200 rounded-xl text-gray-900 focus:border-emerald-600 focus:outline-none"
             />
           </div>
@@ -118,7 +221,8 @@ export default function Calculator() {
               min="2"
               max="10"
               value={criteria}
-              onChange={(e) => setCriteria(parseInt(e.target.value) || 2)}
+              onFocus={(e) => e.target.select()}
+              onChange={(e) => handleCriteriaCountChange(e.target.value)}
               className="w-full px-4 py-3 bg-white border-2 border-cyan-200 rounded-xl text-gray-900 focus:border-cyan-600 focus:outline-none"
             />
           </div>
@@ -204,6 +308,8 @@ export default function Calculator() {
                       <input
                         type="number"
                         value={val}
+                        onFocus={(e) => e.target.select()}
+                        onBlur={() => handleMatrixBlur(altIdx, critIdx)}
                         onChange={(e) =>
                           handleMatrixChange(altIdx, critIdx, e.target.value)
                         }
@@ -225,7 +331,7 @@ export default function Calculator() {
           viewport={{ once: true }}
           className="bg-white border-2 border-gray-200 p-6 rounded-2xl mb-8"
         >
-          <h3 className="text-emerald-600 font-bold mb-4">Bobot Kriteria</h3>
+          <h3 className="text-emerald-600 font-bold mb-4">Bobot dan Tipe Kriteria</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {weights.map((weight, idx) => (
               <div key={idx} className="space-y-2">
@@ -235,15 +341,26 @@ export default function Calculator() {
                 <input
                   type="number"
                   step="0.01"
-                  value={weight.toFixed(2)}
+                  min="0"
+                  value={weight}
+                  onFocus={(e) => e.target.select()}
+                  onBlur={() => handleWeightBlur(idx)}
                   onChange={(e) => handleWeightChange(idx, e.target.value)}
                   className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-emerald-500 focus:outline-none"
                 />
+                <select
+                  value={costBenefit[idx] ?? "benefit"}
+                  onChange={(e) => handleCostBenefitChange(idx, e.target.value)}
+                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-cyan-500 focus:outline-none"
+                >
+                  <option value="benefit">Benefit (semakin besar semakin baik)</option>
+                  <option value="cost">Cost (semakin kecil semakin baik)</option>
+                </select>
               </div>
             ))}
           </div>
           <p className="text-gray-600 text-sm mt-4">
-            💡 Bobot akan dinormalisasi otomatis. Gunakan nilai rasio (misal: 2, 3, 5)
+            Bobot digunakan sesuai nilai input seperti pada materi ELECTRE, misalnya 5, 4, 3, 4, dan 2.
           </p>
         </motion.div>
 
@@ -262,7 +379,7 @@ export default function Calculator() {
             disabled={loading}
             className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50"
           >
-            {loading ? "Menghitung..." : "🚀 Hitung ELECTRE"}
+            {loading ? "Menghitung..." : "Hitung ELECTRE"}
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05, y: -2 }}
@@ -270,7 +387,15 @@ export default function Calculator() {
             onClick={handleGenerateDummy}
             className="px-8 py-4 bg-white border-2 border-emerald-500 text-emerald-600 font-bold rounded-2xl hover:bg-emerald-50 transition-all"
           >
-            🎲 Data Dummy
+            Data Dummy
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05, y: -2 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleClearInput}
+            className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-all"
+          >
+            Kosongkan Input
           </motion.button>
         </motion.div>
 
@@ -285,8 +410,11 @@ export default function Calculator() {
             {/* Ranking */}
             <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 border-2 border-emerald-300 p-8 rounded-2xl">
               <h3 className="text-2xl font-bold text-emerald-900 mb-6">
-                📊 Ranking Hasil
+                Ranking Hasil
               </h3>
+              <p className="text-sm text-emerald-900/70 mb-4">
+                Metode ranking: {result.rankingMethod}
+              </p>
               <div className="space-y-3">
                 {result.ranking.length > 0 ? (
                   result.ranking.map((idx, rank) => (
@@ -313,62 +441,113 @@ export default function Calculator() {
               </div>
             </div>
 
-            {/* Matrices */}
-            <div className="grid md:grid-cols-2 gap-8">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white border-2 border-gray-200 p-6 rounded-2xl overflow-x-auto"
-              >
-                <h4 className="text-emerald-600 font-bold mb-4">
-                  Concordance Matrix
-                </h4>
-                <table className="w-full text-xs text-center">
+            <div className="bg-white border-2 border-emerald-200 p-6 rounded-2xl">
+              <h4 className="text-emerald-700 font-bold mb-3">
+                Dasar Pembentukan Ranking
+              </h4>
+              <p className="text-gray-700 leading-relaxed">
+                Aggregate dominance matrix digunakan untuk melihat alternatif yang tereliminasi.
+                Jika alternatif yang tidak tereliminasi berjumlah dua atau lebih, ranking akhir
+                dibentuk dari selisih total concordance dan discordance.
+              </p>
+              <div className="grid md:grid-cols-3 gap-4 mt-5">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Tidak Tereliminasi</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {result.rankingDetails.notEliminatedCount}
+                  </p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Metode Ranking</p>
+                  <p className="text-base font-bold text-gray-900 mt-1">
+                    {result.rankingMethod}
+                  </p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="text-xs font-semibold text-gray-500 uppercase">Aturan Selisih</p>
+                  <p className="text-base font-bold text-gray-900 mt-1">
+                    Total C - Total D
+                  </p>
+                </div>
+              </div>
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200">
+                      <th className="py-3 px-3 text-left text-gray-700">Alternatif</th>
+                      <th className="py-3 px-3 text-center text-gray-700">Dominasi</th>
+                      <th className="py-3 px-3 text-center text-gray-700">Didominasi</th>
+                      <th className="py-3 px-3 text-center text-gray-700">Status</th>
+                      <th className="py-3 px-3 text-center text-gray-700">Skor C-D</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {result.concordanceMatrix.map((row, i) => (
-                      <tr key={i}>
-                        {row.map((val, j) => (
-                          <td
-                            key={j}
-                            className="p-2 border border-gray-200 text-gray-700"
+                    {result.rankingDetails.scores.map((score) => (
+                      <tr key={score.index} className="border-b border-gray-200">
+                        <td className="py-3 px-3 font-semibold text-gray-900">
+                          {altNames[score.index]}
+                        </td>
+                        <td className="py-3 px-3 text-center text-gray-700">
+                          {score.dominates}
+                        </td>
+                        <td className="py-3 px-3 text-center text-gray-700">
+                          {score.dominatedBy}
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span
+                            className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
+                              score.isEliminated
+                                ? "bg-red-50 text-red-700 border border-red-200"
+                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            }`}
                           >
-                            {val.toFixed(2)}
-                          </td>
-                        ))}
+                            {score.isEliminated ? "Tereliminasi" : "Lolos"}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-semibold text-gray-900">
+                          {formatNumber(score.preferenceScore, 3)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white border-2 border-gray-200 p-6 rounded-2xl overflow-x-auto"
-              >
-                <h4 className="text-cyan-600 font-bold mb-4">
-                  Discordance Matrix
-                </h4>
-                <table className="w-full text-xs text-center">
-                  <tbody>
-                    {result.discordanceMatrix.map((row, i) => (
-                      <tr key={i}>
-                        {row.map((val, j) => (
-                          <td
-                            key={j}
-                            className="p-2 border border-gray-200 text-gray-700"
-                          >
-                            {val.toFixed(3)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </motion.div>
+              </div>
             </div>
+
+            <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl">
+              <h4 className="text-gray-900 font-bold mb-4">
+                Alur Perhitungan ELECTRE
+              </h4>
+              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="font-bold text-gray-900">1. Normalisasi</p>
+                  <p>Setiap nilai dibagi akar jumlah kuadrat pada kolom kriterianya.</p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="font-bold text-gray-900">2. Pembobotan</p>
+                  <p>Nilai normalisasi dikalikan bobot input pada setiap kriteria.</p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="font-bold text-gray-900">3. Concordance dan Discordance</p>
+                  <p>Setiap alternatif dibandingkan berpasangan berdasarkan tipe benefit/cost.</p>
+                </div>
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <p className="font-bold text-gray-900">4. Dominance dan Ranking</p>
+                  <p>F dan G digabung menjadi E. Jika kandidat lolos lebih dari satu, digunakan skor C-D.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8">
+              <MatrixTable title="Normalized Matrix" matrix={result.normalized} />
+              <MatrixTable title="Weighted Matrix" matrix={result.weighted} tone="cyan" />
+              <MatrixTable title="Concordance Matrix" matrix={result.concordanceMatrix} digits={2} />
+              <MatrixTable title="Discordance Matrix" matrix={result.discordanceMatrix} tone="cyan" />
+              <MatrixTable title="Dominan Concordance (F)" matrix={result.concordanceDominanceMatrix} digits={0} />
+              <MatrixTable title="Dominan Discordance (G)" matrix={result.discordanceDominanceMatrix} digits={0} tone="cyan" />
+            </div>
+
+            <MatrixTable title="Aggregate Dominance Matrix (E)" matrix={result.dominanceMatrix} digits={0} />
 
             {/* Thresholds */}
             <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl">

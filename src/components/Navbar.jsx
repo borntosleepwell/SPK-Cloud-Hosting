@@ -7,8 +7,6 @@ export default function Navbar() {
   useEffect(() => {
     const handleScroll = () => {
       const sections = ["home", "dokumentasi", "perhitungan"];
-      const scrollY = window.scrollY;
-
       for (let section of sections) {
         const element = document.getElementById(section);
         if (element) {
@@ -74,4 +72,3 @@ export default function Navbar() {
     </motion.nav>
   );
 }
-
