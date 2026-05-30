@@ -17,17 +17,17 @@ const formatNumber = (value, digits = 3) =>
   Number.isInteger(value) ? value.toString() : Number(value).toFixed(digits);
 
 function MatrixTable({ title, matrix, digits = 3, tone = "emerald" }) {
-  const color = tone === "cyan" ? "text-cyan-600" : "text-emerald-600";
+  const color = tone === "cyan" ? "text-warm-muted" : "text-warm-ink";
 
   return (
-    <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl overflow-x-auto">
-      <h4 className={`${color} font-bold mb-4`}>{title}</h4>
+    <div className="overflow-x-auto border border-warm-taupe bg-warm-white p-6">
+      <h4 className={`${color} mb-4 text-sm font-extrabold uppercase tracking-[0.14em]`}>{title}</h4>
       <table className="w-full text-xs text-center">
         <tbody>
           {matrix.map((row, i) => (
             <tr key={i}>
               {row.map((val, j) => (
-                <td key={j} className="p-2 border border-gray-200 text-gray-700">
+                <td key={j} className="border border-warm-taupe p-2 text-warm-muted">
                   {formatNumber(val, digits)}
                 </td>
               ))}
@@ -170,22 +170,19 @@ export default function Calculator() {
   };
 
   return (
-    <section id="perhitungan" className="py-24 px-6 bg-white">
+    <section id="perhitungan" className="bg-warm-white px-6 py-24">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="mb-16 text-center"
+          className="mb-16 grid gap-6 border-b border-warm-taupe pb-10 md:grid-cols-[0.72fr_1fr] md:items-end"
         >
-          <h2 className="text-5xl md:text-6xl font-bold mb-4 text-gray-900">
-            Kalkulator
-            <span className="block bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-              ELECTRE
-            </span>
+          <h2 className="text-5xl font-extrabold leading-[0.95] tracking-[-0.05em] text-warm-ink md:text-7xl">
+            Kalkulator ELECTRE
           </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          <p className="max-w-2xl text-lg leading-[1.65] text-warm-muted">
             Input data alternatif dan kriteria, kemudian lihat hasil perhitungan ELECTRE secara real-time
           </p>
         </motion.div>
@@ -196,10 +193,10 @@ export default function Calculator() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="grid md:grid-cols-2 gap-6 mb-8"
+          className="mb-8 grid gap-6 md:grid-cols-2"
         >
-          <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-200 p-6 rounded-2xl">
-            <label className="block text-emerald-900 font-bold mb-3">
+          <div className="border border-warm-taupe bg-warm-sand p-6">
+            <label className="mb-3 block text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
               Jumlah Alternatif:
             </label>
             <input
@@ -209,11 +206,11 @@ export default function Calculator() {
               value={alternatives}
               onFocus={(e) => e.target.select()}
               onChange={(e) => handleAlternativeCountChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-emerald-200 rounded-xl text-gray-900 focus:border-emerald-600 focus:outline-none"
+              className="w-full border border-warm-taupe bg-warm-white px-4 py-3 text-warm-ink focus:border-warm-ink focus:outline-none"
             />
           </div>
-          <div className="bg-gradient-to-br from-cyan-50 to-cyan-100/50 border-2 border-cyan-200 p-6 rounded-2xl">
-            <label className="block text-cyan-900 font-bold mb-3">
+          <div className="border border-warm-taupe bg-warm-sand p-6">
+            <label className="mb-3 block text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
               Jumlah Kriteria:
             </label>
             <input
@@ -223,7 +220,7 @@ export default function Calculator() {
               value={criteria}
               onFocus={(e) => e.target.select()}
               onChange={(e) => handleCriteriaCountChange(e.target.value)}
-              className="w-full px-4 py-3 bg-white border-2 border-cyan-200 rounded-xl text-gray-900 focus:border-cyan-600 focus:outline-none"
+              className="w-full border border-warm-taupe bg-warm-white px-4 py-3 text-warm-ink focus:border-warm-ink focus:outline-none"
             />
           </div>
         </motion.div>
@@ -235,9 +232,9 @@ export default function Calculator() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="bg-white border-2 border-gray-200 p-6 rounded-2xl"
+            className="border border-warm-taupe bg-warm-white p-6"
           >
-            <h3 className="text-emerald-600 font-bold mb-4">Nama Alternatif</h3>
+            <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Nama Alternatif</h3>
             <div className="space-y-3">
               {altNames.map((name, idx) => (
                 <input
@@ -245,7 +242,7 @@ export default function Calculator() {
                   type="text"
                   value={name}
                   onChange={(e) => handleNameChange("alt", idx, e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-emerald-500 focus:outline-none"
+                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
                   placeholder={`Alternatif ${idx + 1}`}
                 />
               ))}
@@ -257,9 +254,9 @@ export default function Calculator() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
             viewport={{ once: true }}
-            className="bg-white border-2 border-gray-200 p-6 rounded-2xl"
+            className="border border-warm-taupe bg-warm-white p-6"
           >
-            <h3 className="text-cyan-600 font-bold mb-4">Nama Kriteria</h3>
+            <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Nama Kriteria</h3>
             <div className="space-y-3">
               {critNames.map((name, idx) => (
                 <input
@@ -267,7 +264,7 @@ export default function Calculator() {
                   type="text"
                   value={name}
                   onChange={(e) => handleNameChange("crit", idx, e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-cyan-500 focus:outline-none"
+                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
                   placeholder={`Kriteria ${idx + 1}`}
                 />
               ))}
@@ -281,17 +278,17 @@ export default function Calculator() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="bg-white border-2 border-gray-200 p-6 rounded-2xl mb-8 overflow-x-auto"
+          className="mb-8 overflow-x-auto border border-warm-taupe bg-warm-white p-6"
         >
-          <h3 className="text-emerald-600 font-bold mb-4">Matriks Keputusan</h3>
+          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Matriks Keputusan</h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b-2 border-gray-200">
-                <th className="text-left py-3 px-3 text-gray-700 font-bold">
+              <tr className="border-b border-warm-taupe">
+                <th className="px-3 py-3 text-left font-extrabold text-warm-muted">
                   Alt \ Krit
                 </th>
                 {critNames.map((name, idx) => (
-                  <th key={idx} className="text-center py-3 px-3 text-emerald-600 font-bold">
+                  <th key={idx} className="px-3 py-3 text-center font-extrabold text-warm-ink">
                     {name}
                   </th>
                 ))}
@@ -299,8 +296,8 @@ export default function Calculator() {
             </thead>
             <tbody>
               {matrix.map((row, altIdx) => (
-                <tr key={altIdx} className="border-b border-gray-200">
-                  <td className="py-3 px-3 text-cyan-600 font-bold">
+                <tr key={altIdx} className="border-b border-warm-taupe">
+                  <td className="px-3 py-3 font-extrabold text-warm-ink">
                     {altNames[altIdx]}
                   </td>
                   {row.map((val, critIdx) => (
@@ -313,7 +310,7 @@ export default function Calculator() {
                         onChange={(e) =>
                           handleMatrixChange(altIdx, critIdx, e.target.value)
                         }
-                        className="w-full px-3 py-2 bg-gray-50 border-2 border-gray-200 rounded text-gray-900 text-center focus:border-emerald-500 focus:outline-none"
+                        className="w-full border border-warm-taupe bg-warm-sand px-3 py-2 text-center text-warm-ink focus:border-warm-ink focus:outline-none"
                       />
                     </td>
                   ))}
@@ -329,13 +326,13 @@ export default function Calculator() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
           viewport={{ once: true }}
-          className="bg-white border-2 border-gray-200 p-6 rounded-2xl mb-8"
+          className="mb-8 border border-warm-taupe bg-warm-white p-6"
         >
-          <h3 className="text-emerald-600 font-bold mb-4">Bobot dan Tipe Kriteria</h3>
+          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Bobot dan Tipe Kriteria</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {weights.map((weight, idx) => (
               <div key={idx} className="space-y-2">
-                <label className="text-gray-700 text-sm font-medium">
+                <label className="text-sm font-semibold text-warm-muted">
                   {critNames[idx]}
                 </label>
                 <input
@@ -346,12 +343,12 @@ export default function Calculator() {
                   onFocus={(e) => e.target.select()}
                   onBlur={() => handleWeightBlur(idx)}
                   onChange={(e) => handleWeightChange(idx, e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-emerald-500 focus:outline-none"
+                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
                 />
                 <select
                   value={costBenefit[idx] ?? "benefit"}
                   onChange={(e) => handleCostBenefitChange(idx, e.target.value)}
-                  className="w-full px-4 py-2 bg-gray-50 border-2 border-gray-200 rounded-lg text-gray-900 focus:border-cyan-500 focus:outline-none"
+                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
                 >
                   <option value="benefit">Benefit (semakin besar semakin baik)</option>
                   <option value="cost">Cost (semakin kecil semakin baik)</option>
@@ -359,7 +356,7 @@ export default function Calculator() {
               </div>
             ))}
           </div>
-          <p className="text-gray-600 text-sm mt-4">
+          <p className="mt-4 text-sm leading-[1.6] text-warm-muted">
             Bobot digunakan sesuai nilai input seperti pada materi ELECTRE, misalnya 5, 4, 3, 4, dan 2.
           </p>
         </motion.div>
@@ -377,7 +374,7 @@ export default function Calculator() {
             whileTap={{ scale: 0.95 }}
             onClick={handleCalculate}
             disabled={loading}
-            className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-bold rounded-2xl hover:shadow-lg transition-all disabled:opacity-50"
+            className="border border-warm-ink bg-warm-ink px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-white transition-colors hover:border-warm-coral hover:bg-warm-coral disabled:opacity-50"
           >
             {loading ? "Menghitung..." : "Hitung ELECTRE"}
           </motion.button>
@@ -385,7 +382,7 @@ export default function Calculator() {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleGenerateDummy}
-            className="px-8 py-4 bg-white border-2 border-emerald-500 text-emerald-600 font-bold rounded-2xl hover:bg-emerald-50 transition-all"
+            className="border border-warm-taupe bg-warm-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-ink transition-colors hover:border-warm-ink"
           >
             Data Dummy
           </motion.button>
@@ -393,7 +390,7 @@ export default function Calculator() {
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={handleClearInput}
-            className="px-8 py-4 bg-white border-2 border-gray-300 text-gray-700 font-bold rounded-2xl hover:bg-gray-50 transition-all"
+            className="border border-warm-taupe bg-warm-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-muted transition-colors hover:border-warm-ink hover:text-warm-ink"
           >
             Kosongkan Input
           </motion.button>
@@ -408,11 +405,11 @@ export default function Calculator() {
             className="space-y-8"
           >
             {/* Ranking */}
-            <div className="bg-gradient-to-br from-emerald-50 to-cyan-50 border-2 border-emerald-300 p-8 rounded-2xl">
-              <h3 className="text-2xl font-bold text-emerald-900 mb-6">
+            <div className="border border-warm-taupe bg-warm-sand p-8">
+              <h3 className="mb-6 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
                 Ranking Hasil
               </h3>
-              <p className="text-sm text-emerald-900/70 mb-4">
+              <p className="mb-4 text-sm leading-[1.6] text-warm-muted">
                 Metode ranking: {result.rankingMethod}
               </p>
               <div className="space-y-3">
@@ -423,49 +420,49 @@ export default function Calculator() {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: rank * 0.1 }}
-                      className="flex items-center gap-4 p-4 bg-white rounded-xl border-2 border-emerald-200"
+                      className="flex items-center gap-4 border border-warm-taupe bg-warm-white p-4"
                     >
-                      <div className="text-3xl font-bold text-emerald-600 w-12">
+                      <div className="w-12 text-3xl font-extrabold tracking-[-0.04em] text-warm-coral">
                         #{rank + 1}
                       </div>
-                      <div className="text-lg font-semibold text-gray-900">
+                      <div className="text-lg font-semibold text-warm-ink">
                         {altNames[idx]}
                       </div>
                     </motion.div>
                   ))
                 ) : (
-                  <p className="text-gray-700">
+                  <p className="text-warm-muted">
                     Semua alternatif tidak terdominasi
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="bg-white border-2 border-emerald-200 p-6 rounded-2xl">
-              <h4 className="text-emerald-700 font-bold mb-3">
+            <div className="border border-warm-taupe bg-warm-white p-6">
+              <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
                 Dasar Pembentukan Ranking
               </h4>
-              <p className="text-gray-700 leading-relaxed">
+              <p className="leading-[1.7] text-warm-muted">
                 Aggregate dominance matrix digunakan untuk melihat alternatif yang tereliminasi.
                 Jika alternatif yang tidak tereliminasi berjumlah dua atau lebih, ranking akhir
                 dibentuk dari selisih total concordance dan discordance.
               </p>
               <div className="grid md:grid-cols-3 gap-4 mt-5">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Tidak Tereliminasi</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Tidak Tereliminasi</p>
+                  <p className="mt-1 text-2xl font-extrabold text-warm-ink">
                     {result.rankingDetails.notEliminatedCount}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Metode Ranking</p>
-                  <p className="text-base font-bold text-gray-900 mt-1">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Metode Ranking</p>
+                  <p className="mt-1 text-base font-extrabold text-warm-ink">
                     {result.rankingMethod}
                   </p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="text-xs font-semibold text-gray-500 uppercase">Aturan Selisih</p>
-                  <p className="text-base font-bold text-gray-900 mt-1">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Aturan Selisih</p>
+                  <p className="mt-1 text-base font-extrabold text-warm-ink">
                     Total C - Total D
                   </p>
                 </div>
@@ -473,38 +470,38 @@ export default function Calculator() {
               <div className="mt-6 overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b-2 border-gray-200">
-                      <th className="py-3 px-3 text-left text-gray-700">Alternatif</th>
-                      <th className="py-3 px-3 text-center text-gray-700">Dominasi</th>
-                      <th className="py-3 px-3 text-center text-gray-700">Didominasi</th>
-                      <th className="py-3 px-3 text-center text-gray-700">Status</th>
-                      <th className="py-3 px-3 text-center text-gray-700">Skor C-D</th>
+                    <tr className="border-b border-warm-taupe">
+                      <th className="px-3 py-3 text-left text-warm-muted">Alternatif</th>
+                      <th className="px-3 py-3 text-center text-warm-muted">Dominasi</th>
+                      <th className="px-3 py-3 text-center text-warm-muted">Didominasi</th>
+                      <th className="px-3 py-3 text-center text-warm-muted">Status</th>
+                      <th className="px-3 py-3 text-center text-warm-muted">Skor C-D</th>
                     </tr>
                   </thead>
                   <tbody>
                     {result.rankingDetails.scores.map((score) => (
-                      <tr key={score.index} className="border-b border-gray-200">
-                        <td className="py-3 px-3 font-semibold text-gray-900">
+                      <tr key={score.index} className="border-b border-warm-taupe">
+                        <td className="px-3 py-3 font-semibold text-warm-ink">
                           {altNames[score.index]}
                         </td>
-                        <td className="py-3 px-3 text-center text-gray-700">
+                        <td className="px-3 py-3 text-center text-warm-muted">
                           {score.dominates}
                         </td>
-                        <td className="py-3 px-3 text-center text-gray-700">
+                        <td className="px-3 py-3 text-center text-warm-muted">
                           {score.dominatedBy}
                         </td>
                         <td className="py-3 px-3 text-center">
                           <span
-                            className={`inline-flex px-3 py-1 rounded-full text-xs font-bold ${
+                            className={`inline-flex border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
                               score.isEliminated
-                                ? "bg-red-50 text-red-700 border border-red-200"
-                                : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                ? "border-warm-coral bg-warm-white text-warm-coral"
+                                : "border-warm-taupe bg-warm-sand text-warm-ink"
                             }`}
                           >
                             {score.isEliminated ? "Tereliminasi" : "Lolos"}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-center font-semibold text-gray-900">
+                        <td className="px-3 py-3 text-center font-semibold text-warm-ink">
                           {formatNumber(score.preferenceScore, 3)}
                         </td>
                       </tr>
@@ -514,25 +511,25 @@ export default function Calculator() {
               </div>
             </div>
 
-            <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl">
-              <h4 className="text-gray-900 font-bold mb-4">
+            <div className="border border-warm-taupe bg-warm-white p-6">
+              <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
                 Alur Perhitungan ELECTRE
               </h4>
-              <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="font-bold text-gray-900">1. Normalisasi</p>
+              <div className="grid gap-4 text-sm leading-[1.6] text-warm-muted md:grid-cols-2">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="font-bold text-warm-ink">1. Normalisasi</p>
                   <p>Setiap nilai dibagi akar jumlah kuadrat pada kolom kriterianya.</p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="font-bold text-gray-900">2. Pembobotan</p>
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="font-bold text-warm-ink">2. Pembobotan</p>
                   <p>Nilai normalisasi dikalikan bobot input pada setiap kriteria.</p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="font-bold text-gray-900">3. Concordance dan Discordance</p>
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="font-bold text-warm-ink">3. Concordance dan Discordance</p>
                   <p>Setiap alternatif dibandingkan berpasangan berdasarkan tipe benefit/cost.</p>
                 </div>
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <p className="font-bold text-gray-900">4. Dominance dan Ranking</p>
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="font-bold text-warm-ink">4. Dominance dan Ranking</p>
                   <p>F dan G digabung menjadi E. Jika kandidat lolos lebih dari satu, digunakan skor C-D.</p>
                 </div>
               </div>
@@ -550,18 +547,18 @@ export default function Calculator() {
             <MatrixTable title="Aggregate Dominance Matrix (E)" matrix={result.dominanceMatrix} digits={0} />
 
             {/* Thresholds */}
-            <div className="bg-white border-2 border-gray-200 p-6 rounded-2xl">
-              <h4 className="text-purple-600 font-bold mb-4">Threshold</h4>
+            <div className="border border-warm-taupe bg-warm-white p-6">
+              <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Threshold</h4>
               <div className="grid md:grid-cols-2 gap-4">
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200">
-                  <p className="text-gray-700 text-sm">Concordance Threshold</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-2">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="text-sm text-warm-muted">Concordance Threshold</p>
+                  <p className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
                     {result.thresholds.concordance.toFixed(3)}
                   </p>
                 </div>
-                <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200">
-                  <p className="text-gray-700 text-sm">Discordance Threshold</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-2">
+                <div className="border border-warm-taupe bg-warm-sand p-4">
+                  <p className="text-sm text-warm-muted">Discordance Threshold</p>
+                  <p className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
                     {result.thresholds.discordance.toFixed(3)}
                   </p>
                 </div>

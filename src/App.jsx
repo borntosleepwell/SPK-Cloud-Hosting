@@ -5,7 +5,7 @@ import Calculator from './components/Calculator'
 
 function App() {
   return (
-    <div className="bg-white text-gray-900 overflow-x-hidden">
+    <div className="bg-warm-white text-warm-ink overflow-x-hidden">
       <Navbar />
       <main>
         <Hero />
@@ -17,4 +17,3 @@ function App() {
 }
 
 export default App
-

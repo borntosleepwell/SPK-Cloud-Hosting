@@ -35,12 +35,12 @@ export default function Navbar() {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="fixed top-0 w-full bg-white/80 backdrop-blur-xl border-b border-emerald-100 z-50 shadow-sm"
+      className="fixed top-0 w-full bg-warm-white/90 backdrop-blur-xl border-b border-warm-taupe z-50"
     >
-      <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
         <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent"
+          whileHover={{ y: -1 }}
+          className="text-xl md:text-2xl font-extrabold tracking-[-0.03em] text-warm-ink"
         >
           ELECTRE SPK
         </motion.div>
@@ -51,17 +51,17 @@ export default function Navbar() {
               key={item}
               whileHover={{ scale: 1.1 }}
               onClick={() => scrollToSection(item)}
-              className={`relative text-sm font-medium transition-colors capitalize ${
+              className={`relative pb-1 text-xs md:text-sm font-bold uppercase tracking-[0.12em] transition-colors ${
                 activeSection === item
-                  ? "text-emerald-600"
-                  : "text-gray-600 hover:text-gray-900"
+                  ? "text-warm-ink"
+                  : "text-warm-muted hover:text-warm-ink"
               }`}
             >
               {item.replace("_", " ")}
               {activeSection === item && (
                 <motion.div
                   layoutId="active-nav"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-600 to-cyan-600"
+                  className="absolute bottom-0 left-0 right-0 h-px bg-warm-coral"
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}

@@ -1,8 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+
+function MathBlock({ children }) {
+  return (
+    <div className="my-5 overflow-x-auto border border-warm-taupe bg-warm-white px-5 py-4 text-warm-ink">
+      {`\\[${children}\\]`}
+    </div>
+  );
+}
+
+function MathInline({ children }) {
+  return <span className="text-warm-ink">{`\\(${children}\\)`}</span>;
+}
 
 export default function Documentation() {
   const [openIndex, setOpenIndex] = useState(0);
+
+  useEffect(() => {
+    if (window.MathJax?.typesetPromise) {
+      window.MathJax.typesetPromise();
+    }
+  }, [openIndex]);
 
   const docs = [
     {
@@ -12,13 +30,33 @@ export default function Documentation() {
     },
     {
       title: "Langkah 1: Normalisasi Matriks",
-      content:
-        "Rumus: rij = xij / sqrt(sum xij^2). Normalisasi menyamakan skala antar kriteria dengan membagi setiap nilai pada kolom kriteria terhadap akar jumlah kuadrat kolom tersebut.",
+      content: (
+        <>
+          <p>Rumus normalisasi matriks:</p>
+          <MathBlock>
+            {"r_{ij}=\\frac{x_{ij}}{\\sqrt{\\sum_{i=1}^{m}x_{ij}^{2}}}"}
+          </MathBlock>
+          <p>
+            Normalisasi menyamakan skala antar kriteria dengan membagi setiap
+            nilai pada kolom kriteria terhadap akar jumlah kuadrat kolom
+            tersebut.
+          </p>
+        </>
+      ),
     },
     {
       title: "Langkah 2: Pembobotan",
-      content:
-        "Rumus: vij = wj x rij. Bobot menunjukkan tingkat kepentingan tiap kriteria dan digunakan sesuai nilai input, seperti contoh W = (5, 4, 3, 4, 2) pada materi.",
+      content: (
+        <>
+          <p>Rumus pembobotan:</p>
+          <MathBlock>{"v_{ij}=w_j \\times r_{ij}"}</MathBlock>
+          <p>
+            Bobot menunjukkan tingkat kepentingan tiap kriteria dan digunakan
+            sesuai nilai input, seperti contoh{" "}
+            <MathInline>{"W=(5,4,3,4,2)"}</MathInline> pada materi.
+          </p>
+        </>
+      ),
     },
     {
       title: "Langkah 3: Concordance Matrix",
@@ -32,36 +70,47 @@ export default function Documentation() {
     },
     {
       title: "Langkah 5: Dominance dan Ranking",
-      content:
-        "Concordance dan discordance dibandingkan dengan threshold rata-rata untuk membentuk aggregate dominance matrix. Jika belum ada alternatif yang dominan, ranking dapat dihitung dari jumlah nilai Ckl - Dkl seperti tabel akhir pada materi.",
+      content: (
+        <>
+          <p>
+            Concordance dan discordance dibandingkan dengan threshold rata-rata
+            untuk membentuk aggregate dominance matrix.
+          </p>
+          <MathBlock>
+            {"S_k=\\sum_{l=1}^{m}C_{kl}-\\sum_{l=1}^{m}D_{kl}"}
+          </MathBlock>
+          <p>
+            Jika belum ada alternatif yang dominan, ranking dapat dihitung dari
+            skor selisih concordance dan discordance seperti tabel akhir pada
+            materi.
+          </p>
+        </>
+      ),
     },
   ];
 
   return (
     <section
       id="dokumentasi"
-      className="py-24 px-6 bg-gradient-to-br from-gray-50 via-white to-emerald-50/30"
+      className="border-y border-warm-taupe bg-warm-taupe px-6 py-24"
     >
-      <div className="max-w-4xl mx-auto">
+      <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="mb-16 text-center"
+          className="mb-16 grid gap-8 md:grid-cols-[0.72fr_1fr] md:items-end"
         >
-          <h2 className="text-5xl md:text-6xl font-bold mb-4 text-gray-900">
-            Dokumentasi
-            <span className="block bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-              Metode ELECTRE
-            </span>
+          <h2 className="text-5xl font-extrabold leading-[0.95] tracking-[-0.05em] text-warm-ink md:text-7xl">
+            Dokumentasi Metode ELECTRE
           </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          <p className="max-w-2xl text-lg leading-[1.65] text-warm-muted">
             Pelajari langkah demi langkah cara kerja ELECTRE dalam pengambilan keputusan multi-kriteria
           </p>
         </motion.div>
 
-        <div className="space-y-4">
+        <div className="border-t border-warm-ink">
           {docs.map((doc, idx) => (
             <motion.div
               key={doc.title}
@@ -69,21 +118,24 @@ export default function Documentation() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: idx * 0.05 }}
               viewport={{ once: true }}
+              className="border-b border-warm-ink"
             >
               <motion.button
                 onClick={() => setOpenIndex(openIndex === idx ? -1 : idx)}
-                className="w-full text-left p-6 bg-white border-2 border-gray-200 rounded-2xl hover:border-emerald-500 transition-all group"
-                whileHover={{ y: -2 }}
+                className="group w-full bg-transparent p-0 text-left transition-colors hover:bg-warm-white/40"
               >
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-600 transition-colors">
+                <div className="grid grid-cols-[3rem_1fr_2rem] items-center gap-4 py-7">
+                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-warm-coral">
+                    {String(idx + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="text-xl font-extrabold tracking-[-0.02em] text-warm-ink transition-colors group-hover:text-warm-coral md:text-2xl">
                     {doc.title}
                   </h3>
                   <motion.div
                     animate={{ rotate: openIndex === idx ? 180 : 0 }}
-                    className="text-emerald-600 text-2xl flex-shrink-0 ml-4"
+                    className="text-right text-2xl font-light text-warm-ink"
                   >
-                    v
+                    +
                   </motion.div>
                 </div>
               </motion.button>
@@ -97,7 +149,7 @@ export default function Documentation() {
                 transition={{ duration: 0.3 }}
                 className="overflow-hidden"
               >
-                <div className="px-6 py-4 bg-gradient-to-br from-emerald-50 to-cyan-50 border-2 border-t-0 border-gray-200 rounded-b-2xl text-gray-700 leading-relaxed">
+                <div className="pb-8 pl-16 pr-8 text-base leading-[1.7] text-warm-muted md:max-w-4xl">
                   {doc.content}
                 </div>
               </motion.div>
