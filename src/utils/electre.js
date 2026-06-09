@@ -123,7 +123,7 @@ export const calculateDiscordanceDominance = (
 
   for (let p = 0; p < n; p++) {
     for (let q = 0; q < n; q++) {
-      if (p !== q && discordance[p][q] >= discordanceThreshold) {
+      if (p !== q && discordance[p][q] <= discordanceThreshold) {
         dominant[p][q] = 1;
       }
     }
@@ -159,20 +159,10 @@ export const calculateRankingDetails = (dominance, concordance, discordance) => 
     };
   });
 
-  const notEliminatedCount = scores.filter((item) => item.dominatedBy === 0).length;
-  const shouldUsePreferenceScore = notEliminatedCount >= 2;
-
   const sortedScores = [...scores]
     .sort((a, b) => {
-      if (shouldUsePreferenceScore) {
-        if (b.preferenceScore !== a.preferenceScore) {
-          return b.preferenceScore - a.preferenceScore;
-        }
-        return b.dominanceScore - a.dominanceScore;
-      }
-
-      if (b.dominanceScore !== a.dominanceScore) {
-        return b.dominanceScore - a.dominanceScore;
+      if (b.dominates !== a.dominates) {
+        return b.dominates - a.dominates;
       }
       return b.preferenceScore - a.preferenceScore;
     });
@@ -180,10 +170,8 @@ export const calculateRankingDetails = (dominance, concordance, discordance) => 
   return {
     scores: sortedScores,
     ranking: sortedScores.map((item) => item.index),
-    method: shouldUsePreferenceScore
-      ? "Selisih total Concordance - Discordance"
-      : "Aggregate dominance matrix",
-    notEliminatedCount,
+    method: "Jumlah dominasi pada Aggregate Dominance Matrix",
+    notEliminatedCount: scores.filter((item) => item.dominatedBy === 0).length,
   };
 };
 

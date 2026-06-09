@@ -15,7 +15,7 @@ html {
 }
 
 body {
-  @apply bg-warm-white text-warm-ink font-sans antialiased;
+  @apply bg-cloud-bg text-cloud-ink font-sans antialiased;
   font-feature-settings: "kern" 1, "liga" 1;
 }
 
@@ -24,15 +24,15 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-warm-sand;
+  @apply bg-cloud-soft;
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-warm-coral hover:bg-warm-ink;
+  @apply bg-cloud-primary hover:bg-cloud-accent;
 }
 
 ::selection {
-  @apply bg-warm-coral text-warm-white;
+  @apply bg-cloud-primary text-white;
 }
 
 button,

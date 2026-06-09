@@ -35,14 +35,14 @@ export default function Navbar() {
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className="fixed top-0 w-full bg-warm-white/90 backdrop-blur-xl border-b border-warm-taupe z-50"
+      className="fixed top-0 z-50 w-full border-b border-cloud-line bg-cloud-bg/90 backdrop-blur-xl"
     >
       <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
         <motion.div
           whileHover={{ y: -1 }}
-          className="text-xl md:text-2xl font-extrabold tracking-[-0.03em] text-warm-ink"
+          className="text-xl font-extrabold text-cloud-ink md:text-2xl"
         >
-          ELECTRE SPK
+          VPS ELECTRE
         </motion.div>
 
         <div className="flex gap-8 items-center">
@@ -53,15 +53,15 @@ export default function Navbar() {
               onClick={() => scrollToSection(item)}
               className={`relative pb-1 text-xs md:text-sm font-bold uppercase tracking-[0.12em] transition-colors ${
                 activeSection === item
-                  ? "text-warm-ink"
-                  : "text-warm-muted hover:text-warm-ink"
+                  ? "text-cloud-ink"
+                  : "text-cloud-muted hover:text-cloud-ink"
               }`}
             >
               {item.replace("_", " ")}
               {activeSection === item && (
                 <motion.div
                   layoutId="active-nav"
-                  className="absolute bottom-0 left-0 right-0 h-px bg-warm-coral"
+                  className="absolute bottom-0 left-0 right-0 h-px bg-cloud-accent"
                   transition={{ type: "spring", stiffness: 500, damping: 30 }}
                 />
               )}

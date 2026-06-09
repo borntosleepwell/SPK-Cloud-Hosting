@@ -5,7 +5,7 @@ import Calculator from './components/Calculator'
 
 function App() {
   return (
-    <div className="bg-warm-white text-warm-ink overflow-x-hidden">
+    <div className="overflow-x-hidden bg-cloud-bg text-cloud-ink">
       <Navbar />
       <main>
         <Hero />

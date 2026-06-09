@@ -1,33 +1,63 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { calculateELECTRE, generateDummyData } from "../utils/electre";
+import { calculateELECTRE } from "../utils/electre";
+import {
+  paperAlternativeNames,
+  paperCostBenefit,
+  paperCriteria,
+  paperCriterionLabels,
+  paperMatrix,
+  paperPublishedResult,
+  paperWeights,
+  storageScoreNotes,
+} from "../data/paperCase";
 
-const DEFAULT_ALTERNATIVES = 4;
-const DEFAULT_CRITERIA = 3;
-
-const createMatrix = (rowCount, colCount, existingMatrix = []) =>
+const createMatrix = (rowCount, existingMatrix = []) =>
   Array.from({ length: rowCount }, (_, rowIdx) =>
-    Array.from({ length: colCount }, (_, colIdx) => existingMatrix[rowIdx]?.[colIdx] ?? 0)
+    paperCriteria.map((_, colIdx) => existingMatrix[rowIdx]?.[colIdx] ?? 0)
   );
 
-const resizeList = (length, existingList, fallback) =>
-  Array.from({ length }, (_, idx) => existingList[idx] ?? fallback(idx));
+const resizeList = (length, existingList) =>
+  Array.from(
+    { length },
+    (_, idx) => existingList[idx] ?? `Alternatif ${idx + 1}`
+  );
 
-const formatNumber = (value, digits = 3) =>
-  Number.isInteger(value) ? value.toString() : Number(value).toFixed(digits);
+const formatNumber = (value, digits = 3) => {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return "-";
+  return Number.isInteger(numeric) ? numeric.toString() : numeric.toFixed(digits);
+};
 
-function MatrixTable({ title, matrix, digits = 3, tone = "emerald" }) {
-  const color = tone === "cyan" ? "text-warm-muted" : "text-warm-ink";
-
+function MatrixTable({ title, matrix, labels, digits = 3 }) {
   return (
-    <div className="overflow-x-auto border border-warm-taupe bg-warm-white p-6">
-      <h4 className={`${color} mb-4 text-sm font-extrabold uppercase tracking-[0.14em]`}>{title}</h4>
-      <table className="w-full text-xs text-center">
+    <div className="overflow-x-auto border border-cloud-line bg-cloud-panel p-5">
+      <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+        {title}
+      </h4>
+      <table className="w-full text-center text-xs">
+        {labels && (
+          <thead>
+            <tr className="border-b border-cloud-line">
+              <th className="p-2 text-left text-cloud-muted">A</th>
+              {labels.map((label) => (
+                <th key={label} className="p-2 text-cloud-ink">
+                  {label.split(" - ")[0]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+        )}
         <tbody>
           {matrix.map((row, i) => (
-            <tr key={i}>
+            <tr key={i} className="border-b border-cloud-line last:border-b-0">
+              {labels && (
+                <td className="p-2 text-left font-bold text-cloud-ink">
+                  A{i + 1}
+                </td>
+              )}
               {row.map((val, j) => (
-                <td key={j} className="border border-warm-taupe p-2 text-warm-muted">
+                <td key={j} className="p-2 text-cloud-muted">
                   {formatNumber(val, digits)}
                 </td>
               ))}
@@ -40,56 +70,61 @@ function MatrixTable({ title, matrix, digits = 3, tone = "emerald" }) {
 }
 
 export default function Calculator() {
-  const [alternatives, setAlternatives] = useState(DEFAULT_ALTERNATIVES);
-  const [criteria, setCriteria] = useState(DEFAULT_CRITERIA);
-  const [matrix, setMatrix] = useState(createMatrix(DEFAULT_ALTERNATIVES, DEFAULT_CRITERIA));
-  const [weights, setWeights] = useState(Array(DEFAULT_CRITERIA).fill(1));
-  const [costBenefit, setCostBenefit] = useState(Array(DEFAULT_CRITERIA).fill("benefit"));
-  const [altNames, setAltNames] = useState(
-    resizeList(DEFAULT_ALTERNATIVES, [], (idx) => `Alternatif ${idx + 1}`)
-  );
-  const [critNames, setCritNames] = useState(
-    resizeList(DEFAULT_CRITERIA, [], (idx) => `Kriteria ${idx + 1}`)
-  );
+  const [mode, setMode] = useState("paper");
+  const [alternatives, setAlternatives] = useState(5);
+  const [matrix, setMatrix] = useState(paperMatrix);
+  const [altNames, setAltNames] = useState(paperAlternativeNames);
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const resizeForm = (nextAlternatives, nextCriteria) => {
-    setMatrix((currentMatrix) => createMatrix(nextAlternatives, nextCriteria, currentMatrix));
-    setWeights((currentWeights) => resizeList(nextCriteria, currentWeights, () => 1));
-    setCostBenefit((currentTypes) =>
-      resizeList(nextCriteria, currentTypes, () => "benefit")
-    );
+  const isPaperMode = mode === "paper";
+  const activeMatrix = isPaperMode ? paperMatrix : matrix;
+  const activeNames = isPaperMode ? paperAlternativeNames : altNames;
+
+  const dominanceRows = useMemo(
+    () =>
+      (result?.dominanceMatrix ?? []).map((row, index) => ({
+        index,
+        total: row.reduce((sum, value) => sum + value, 0),
+      })),
+    [result]
+  );
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
+    if (nextMode === "paper") {
+      setAlternatives(5);
+      setMatrix(paperMatrix);
+      setAltNames(paperAlternativeNames);
+      setResult(null);
+      return;
+    }
+    setResult(null);
+  };
+
+  const handleAlternativeCountChange = (value) => {
+    const nextAlternatives = Math.min(10, Math.max(2, parseInt(value) || 2));
+    setAlternatives(nextAlternatives);
+    setMatrix((currentMatrix) => createMatrix(nextAlternatives, currentMatrix));
+    setAltNames((currentNames) => resizeList(nextAlternatives, currentNames));
+    setResult(null);
+  };
+
+  const handleNameChange = (idx, value) => {
     setAltNames((currentNames) =>
-      resizeList(nextAlternatives, currentNames, (idx) => `Alternatif ${idx + 1}`)
-    );
-    setCritNames((currentNames) =>
-      resizeList(nextCriteria, currentNames, (idx) => `Kriteria ${idx + 1}`)
+      currentNames.map((name, i) => (i === idx ? value : name))
     );
     setResult(null);
   };
 
-  const clampCount = (value) => Math.min(10, Math.max(2, parseInt(value) || 2));
-
-  const handleAlternativeCountChange = (value) => {
-    const nextAlternatives = clampCount(value);
-    setAlternatives(nextAlternatives);
-    resizeForm(nextAlternatives, criteria);
-  };
-
-  const handleCriteriaCountChange = (value) => {
-    const nextCriteria = clampCount(value);
-    setCriteria(nextCriteria);
-    resizeForm(alternatives, nextCriteria);
-  };
-
   const handleMatrixChange = (altIdx, critIdx, value) => {
-    const newMatrix = matrix.map((row, i) =>
-      i === altIdx
-        ? row.map((val, j) => (j === critIdx ? value : val))
-        : row
+    setMatrix((currentMatrix) =>
+      currentMatrix.map((row, i) =>
+        i === altIdx
+          ? row.map((val, j) => (j === critIdx ? value : val))
+          : row
+      )
     );
-    setMatrix(newMatrix);
     setResult(null);
   };
 
@@ -103,466 +138,314 @@ export default function Calculator() {
     );
   };
 
-  const handleWeightChange = (critIdx, value) => {
-    const newWeights = weights.map((w, i) =>
-      i === critIdx ? value : w
-    );
-    setWeights(newWeights);
-    setResult(null);
-  };
-
-  const handleWeightBlur = (critIdx) => {
-    setWeights((currentWeights) =>
-      currentWeights.map((weight, i) => (i === critIdx && weight === "" ? 0 : weight))
-    );
-  };
-
-  const handleCostBenefitChange = (critIdx, value) => {
-    setCostBenefit(costBenefit.map((type, i) => (i === critIdx ? value : type)));
-    setResult(null);
-  };
-
-  const handleNameChange = (type, idx, value) => {
-    if (type === "alt") {
-      setAltNames(altNames.map((name, i) => (i === idx ? value : name)));
-    } else {
-      setCritNames(critNames.map((name, i) => (i === idx ? value : name)));
-    }
-    setResult(null);
-  };
-
   const handleCalculate = async () => {
     setLoading(true);
     try {
-      const numericWeights = weights.map((weight) => Number(weight) || 0);
-      const numericMatrix = matrix.map((row) =>
-        row.map((value) => Number(value) || 0)
-      );
-      const sumWeights = numericWeights.reduce((a, b) => a + b, 0);
-      if (sumWeights <= 0) {
-        throw new Error("Total bobot harus lebih dari 0.");
+      if (isPaperMode) {
+        setResult(paperPublishedResult);
+      } else {
+        const numericMatrix = matrix.map((row) =>
+          row.map((value) => Number(value) || 0)
+        );
+        setMatrix(numericMatrix);
+        setResult(calculateELECTRE(numericMatrix, paperWeights, paperCostBenefit));
       }
-      setMatrix(numericMatrix);
-      setWeights(numericWeights);
-      const res = calculateELECTRE(numericMatrix, numericWeights, costBenefit);
-      setResult(res);
     } catch (error) {
-      alert("Error: " + error.message);
+      alert(`Error: ${error.message}`);
     }
     setLoading(false);
   };
 
-  const handleGenerateDummy = () => {
-    const dummy = generateDummyData(alternatives, criteria);
-    setMatrix(dummy.matrix);
-    setWeights(dummy.weights);
-    setCostBenefit(Array(criteria).fill("benefit"));
-    setAltNames(dummy.altNames);
-    setCritNames(dummy.critNames);
+  const handleLoadPaperAlternatives = () => {
+    setAlternatives(5);
+    setMatrix(paperMatrix);
+    setAltNames(paperAlternativeNames);
     setResult(null);
   };
 
   const handleClearInput = () => {
-    setMatrix(createMatrix(alternatives, criteria));
-    setWeights(Array(criteria).fill(1));
-    setCostBenefit(Array(criteria).fill("benefit"));
+    setMatrix(createMatrix(alternatives));
     setResult(null);
   };
 
   return (
-    <section id="perhitungan" className="bg-warm-white px-6 py-24">
-      <div className="max-w-6xl mx-auto">
+    <section id="perhitungan" className="bg-cloud-bg px-6 py-24">
+      <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           viewport={{ once: true }}
-          className="mb-16 grid gap-6 border-b border-warm-taupe pb-10 md:grid-cols-[0.72fr_1fr] md:items-end"
+          className="mb-12 grid gap-6 border-b border-cloud-line pb-10 md:grid-cols-[0.78fr_1fr] md:items-end"
         >
-          <h2 className="text-5xl font-extrabold leading-[0.95] tracking-[-0.05em] text-warm-ink md:text-7xl">
-            Kalkulator ELECTRE
-          </h2>
-          <p className="max-w-2xl text-lg leading-[1.65] text-warm-muted">
-            Input data alternatif dan kriteria, kemudian lihat hasil perhitungan ELECTRE secara real-time
+          <div>
+            <p className="mb-4 text-sm font-extrabold uppercase tracking-[0.16em] text-cloud-accent">
+              Studi kasus paper SENIFORMA 2026
+            </p>
+            <h2 className="text-5xl font-extrabold leading-[0.95] text-cloud-ink md:text-7xl">
+              Perhitungan VPS Cloud
+            </h2>
+          </div>
+          <p className="max-w-2xl text-lg leading-[1.65] text-cloud-muted">
+            Kriteria dan bobot mengikuti paper pemilihan Web Hosting VPS Cloud.
+            Mode paper memuat data dari naskah, lalu hasil perhitungan muncul
+            setelah tombol Hitung ELECTRE ditekan.
           </p>
         </motion.div>
 
-        {/* Configuration Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-8 grid gap-6 md:grid-cols-2"
-        >
-          <div className="border border-warm-taupe bg-warm-sand p-6">
-            <label className="mb-3 block text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
-              Jumlah Alternatif:
-            </label>
-            <input
-              type="number"
-              min="2"
-              max="10"
-              value={alternatives}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => handleAlternativeCountChange(e.target.value)}
-              className="w-full border border-warm-taupe bg-warm-white px-4 py-3 text-warm-ink focus:border-warm-ink focus:outline-none"
-            />
+        <div className="mb-8 grid gap-4 md:grid-cols-3">
+          <div className="border border-cloud-line bg-cloud-panel p-5">
+            <p className="text-3xl font-extrabold text-cloud-ink">5</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-cloud-muted">
+              Kriteria fix
+            </p>
           </div>
-          <div className="border border-warm-taupe bg-warm-sand p-6">
-            <label className="mb-3 block text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
-              Jumlah Kriteria:
-            </label>
-            <input
-              type="number"
-              min="2"
-              max="10"
-              value={criteria}
-              onFocus={(e) => e.target.select()}
-              onChange={(e) => handleCriteriaCountChange(e.target.value)}
-              className="w-full border border-warm-taupe bg-warm-white px-4 py-3 text-warm-ink focus:border-warm-ink focus:outline-none"
-            />
+          <div className="border border-cloud-line bg-cloud-panel p-5">
+            <p className="text-3xl font-extrabold text-cloud-ink">30%</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-cloud-muted">
+              Bobot tertinggi: harga
+            </p>
           </div>
-        </motion.div>
-
-        {/* Names Input */}
-        <div className="grid md:grid-cols-2 gap-8 mb-8">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="border border-warm-taupe bg-warm-white p-6"
-          >
-            <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Nama Alternatif</h3>
-            <div className="space-y-3">
-              {altNames.map((name, idx) => (
-                <input
-                  key={idx}
-                  type="text"
-                  value={name}
-                  onChange={(e) => handleNameChange("alt", idx, e.target.value)}
-                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
-                  placeholder={`Alternatif ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="border border-warm-taupe bg-warm-white p-6"
-          >
-            <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Nama Kriteria</h3>
-            <div className="space-y-3">
-              {critNames.map((name, idx) => (
-                <input
-                  key={idx}
-                  type="text"
-                  value={name}
-                  onChange={(e) => handleNameChange("crit", idx, e.target.value)}
-                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
-                  placeholder={`Kriteria ${idx + 1}`}
-                />
-              ))}
-            </div>
-          </motion.div>
+          <div className="border border-cloud-line bg-cloud-panel p-5">
+            <p className="text-3xl font-extrabold text-cloud-accent">5</p>
+            <p className="mt-2 text-xs font-bold uppercase tracking-[0.14em] text-cloud-muted">
+              Alternatif provider
+            </p>
+          </div>
         </div>
 
-        {/* Matrix Input */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          viewport={{ once: true }}
-          className="mb-8 overflow-x-auto border border-warm-taupe bg-warm-white p-6"
-        >
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Matriks Keputusan</h3>
+        <div className="mb-8 flex flex-wrap gap-3">
+          {[
+            ["paper", "Data Paper"],
+            ["manual", "Kalkulator Manual"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              onClick={() => switchMode(value)}
+              className={`border px-5 py-3 text-sm font-extrabold uppercase tracking-[0.14em] transition-colors ${
+                mode === value
+                  ? "border-cloud-primary bg-cloud-primary text-white"
+                  : "border-cloud-line bg-cloud-panel text-cloud-ink hover:border-cloud-primary"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-8 overflow-x-auto border border-cloud-line bg-cloud-panel p-6">
+          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+            Kriteria, Bobot, dan Jenis
+          </h3>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-warm-taupe">
-                <th className="px-3 py-3 text-left font-extrabold text-warm-muted">
-                  Alt \ Krit
-                </th>
-                {critNames.map((name, idx) => (
-                  <th key={idx} className="px-3 py-3 text-center font-extrabold text-warm-ink">
-                    {name}
+              <tr className="border-b border-cloud-line text-left text-cloud-muted">
+                <th className="p-3">Kode</th>
+                <th className="p-3">Kriteria</th>
+                <th className="p-3">Bobot</th>
+                <th className="p-3">Jenis</th>
+                <th className="p-3">Satuan</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paperCriteria.map((criterion) => (
+                <tr key={criterion.code} className="border-b border-cloud-line">
+                  <td className="p-3 font-extrabold text-cloud-ink">{criterion.code}</td>
+                  <td className="p-3 text-cloud-ink">{criterion.name}</td>
+                  <td className="p-3 text-cloud-muted">{criterion.weight * 100}%</td>
+                  <td className="p-3 text-cloud-muted">
+                    {criterion.type === "cost" ? "Cost" : "Benefit"}
+                  </td>
+                  <td className="p-3 text-cloud-muted">{criterion.unit}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="mt-4 text-sm text-cloud-muted">
+            Konversi C5: {storageScoreNotes.join(", ")}.
+          </p>
+        </div>
+
+        {!isPaperMode && (
+          <div className="mb-8 grid gap-6 md:grid-cols-[0.45fr_1fr]">
+            <div className="border border-cloud-line bg-cloud-panel p-6">
+              <label className="mb-3 block text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+                Jumlah Alternatif
+              </label>
+              <input
+                type="number"
+                min="2"
+                max="10"
+                value={alternatives}
+                onFocus={(event) => event.target.select()}
+                onChange={(event) => handleAlternativeCountChange(event.target.value)}
+                className="w-full border border-cloud-line bg-white px-4 py-3 text-cloud-ink focus:border-cloud-primary focus:outline-none"
+              />
+              <button
+                onClick={handleLoadPaperAlternatives}
+                className="mt-4 w-full border border-cloud-line bg-white px-4 py-3 text-sm font-bold uppercase tracking-[0.12em] text-cloud-ink hover:border-cloud-primary"
+              >
+                Muat Alternatif Paper
+              </button>
+            </div>
+
+            <div className="border border-cloud-line bg-cloud-panel p-6">
+              <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+                Nama Alternatif
+              </h3>
+              <div className="grid gap-3 md:grid-cols-2">
+                {altNames.map((name, idx) => (
+                  <input
+                    key={idx}
+                    type="text"
+                    value={name}
+                    onChange={(event) => handleNameChange(idx, event.target.value)}
+                    className="w-full border border-cloud-line bg-white px-4 py-2 text-cloud-ink focus:border-cloud-primary focus:outline-none"
+                    placeholder={`Alternatif ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mb-8 overflow-x-auto border border-cloud-line bg-cloud-panel p-6">
+          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+            Matriks Keputusan
+          </h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-cloud-line">
+                <th className="p-3 text-left text-cloud-muted">Alternatif</th>
+                {paperCriteria.map((criterion) => (
+                  <th key={criterion.code} className="p-3 text-center text-cloud-ink">
+                    {criterion.code}
                   </th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {matrix.map((row, altIdx) => (
-                <tr key={altIdx} className="border-b border-warm-taupe">
-                  <td className="px-3 py-3 font-extrabold text-warm-ink">
-                    {altNames[altIdx]}
+              {activeMatrix.map((row, altIdx) => (
+                <tr key={altIdx} className="border-b border-cloud-line">
+                  <td className="p-3 font-extrabold text-cloud-ink">
+                    {activeNames[altIdx]}
                   </td>
                   {row.map((val, critIdx) => (
-                    <td key={critIdx} className="py-3 px-3">
-                      <input
-                        type="number"
-                        value={val}
-                        onFocus={(e) => e.target.select()}
-                        onBlur={() => handleMatrixBlur(altIdx, critIdx)}
-                        onChange={(e) =>
-                          handleMatrixChange(altIdx, critIdx, e.target.value)
-                        }
-                        className="w-full border border-warm-taupe bg-warm-sand px-3 py-2 text-center text-warm-ink focus:border-warm-ink focus:outline-none"
-                      />
+                    <td key={critIdx} className="p-3">
+                      {isPaperMode ? (
+                        <span className="block text-center text-cloud-muted">
+                          {formatNumber(val, critIdx === 0 ? 1 : 0)}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          value={val}
+                          onFocus={(event) => event.target.select()}
+                          onBlur={() => handleMatrixBlur(altIdx, critIdx)}
+                          onChange={(event) =>
+                            handleMatrixChange(altIdx, critIdx, event.target.value)
+                          }
+                          className="w-full border border-cloud-line bg-white px-3 py-2 text-center text-cloud-ink focus:border-cloud-primary focus:outline-none"
+                        />
+                      )}
                     </td>
                   ))}
                 </tr>
               ))}
             </tbody>
           </table>
-        </motion.div>
+        </div>
 
-        {/* Weights Input */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-          viewport={{ once: true }}
-          className="mb-8 border border-warm-taupe bg-warm-white p-6"
-        >
-          <h3 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Bobot dan Tipe Kriteria</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {weights.map((weight, idx) => (
-              <div key={idx} className="space-y-2">
-                <label className="text-sm font-semibold text-warm-muted">
-                  {critNames[idx]}
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={weight}
-                  onFocus={(e) => e.target.select()}
-                  onBlur={() => handleWeightBlur(idx)}
-                  onChange={(e) => handleWeightChange(idx, e.target.value)}
-                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
-                />
-                <select
-                  value={costBenefit[idx] ?? "benefit"}
-                  onChange={(e) => handleCostBenefitChange(idx, e.target.value)}
-                  className="w-full border border-warm-taupe bg-warm-sand px-4 py-2 text-warm-ink focus:border-warm-ink focus:outline-none"
-                >
-                  <option value="benefit">Benefit (semakin besar semakin baik)</option>
-                  <option value="cost">Cost (semakin kecil semakin baik)</option>
-                </select>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-sm leading-[1.6] text-warm-muted">
-            Bobot digunakan sesuai nilai input seperti pada materi ELECTRE, misalnya 5, 4, 3, 4, dan 2.
-          </p>
-        </motion.div>
-
-        {/* Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          viewport={{ once: true }}
-          className="flex gap-4 justify-center mb-16 flex-wrap"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
+        <div className="mb-16 flex flex-wrap justify-center gap-4">
+          <button
             onClick={handleCalculate}
             disabled={loading}
-            className="border border-warm-ink bg-warm-ink px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-white transition-colors hover:border-warm-coral hover:bg-warm-coral disabled:opacity-50"
+            className="border border-cloud-primary bg-cloud-primary px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-white transition-colors hover:bg-cloud-accent disabled:opacity-50"
           >
             {loading ? "Menghitung..." : "Hitung ELECTRE"}
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleGenerateDummy}
-            className="border border-warm-taupe bg-warm-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-ink transition-colors hover:border-warm-ink"
-          >
-            Data Dummy
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleClearInput}
-            className="border border-warm-taupe bg-warm-white px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-warm-muted transition-colors hover:border-warm-ink hover:text-warm-ink"
-          >
-            Kosongkan Input
-          </motion.button>
-        </motion.div>
+          </button>
+          {!isPaperMode && (
+            <button
+              onClick={handleClearInput}
+              className="border border-cloud-line bg-cloud-panel px-8 py-4 text-sm font-bold uppercase tracking-[0.14em] text-cloud-muted transition-colors hover:border-cloud-primary hover:text-cloud-ink"
+            >
+              Kosongkan Input
+            </button>
+          )}
+        </div>
 
-        {/* Results */}
         {result && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
             className="space-y-8"
           >
-            {/* Ranking */}
-            <div className="border border-warm-taupe bg-warm-sand p-8">
-              <h3 className="mb-6 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
+            <div className="border border-cloud-line bg-cloud-panel p-8">
+              <h3 className="mb-2 text-3xl font-extrabold text-cloud-ink">
                 Ranking Hasil
               </h3>
-              <p className="mb-4 text-sm leading-[1.6] text-warm-muted">
+              <p className="mb-6 text-sm leading-[1.6] text-cloud-muted">
                 Metode ranking: {result.rankingMethod}
               </p>
               <div className="space-y-3">
-                {result.ranking.length > 0 ? (
-                  result.ranking.map((idx, rank) => (
-                    <motion.div
-                      key={idx}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: rank * 0.1 }}
-                      className="flex items-center gap-4 border border-warm-taupe bg-warm-white p-4"
-                    >
-                      <div className="w-12 text-3xl font-extrabold tracking-[-0.04em] text-warm-coral">
-                        #{rank + 1}
-                      </div>
-                      <div className="text-lg font-semibold text-warm-ink">
-                        {altNames[idx]}
-                      </div>
-                    </motion.div>
-                  ))
-                ) : (
-                  <p className="text-warm-muted">
-                    Semua alternatif tidak terdominasi
-                  </p>
-                )}
+                {result.ranking.map((idx, rank) => (
+                  <div
+                    key={`${idx}-${rank}`}
+                    className="grid gap-3 border border-cloud-line bg-white p-4 md:grid-cols-[5rem_1fr_10rem]"
+                  >
+                    <div className="text-3xl font-extrabold text-cloud-accent">
+                      #{rank + 1}
+                    </div>
+                    <div>
+                      <p className="text-lg font-extrabold text-cloud-ink">
+                        {activeNames[idx]}
+                      </p>
+                      <p className="text-sm text-cloud-muted">
+                        Dominasi: {dominanceRows.find((row) => row.index === idx)?.total ?? 0}
+                      </p>
+                    </div>
+                    <div className="text-sm font-bold uppercase tracking-[0.12em] text-cloud-muted">
+                      {rank === 0 ? "Terbaik" : "Alternatif"}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="border border-warm-taupe bg-warm-white p-6">
-              <h4 className="mb-3 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
-                Dasar Pembentukan Ranking
-              </h4>
-              <p className="leading-[1.7] text-warm-muted">
-                Aggregate dominance matrix digunakan untuk melihat alternatif yang tereliminasi.
-                Jika alternatif yang tidak tereliminasi berjumlah dua atau lebih, ranking akhir
-                dibentuk dari selisih total concordance dan discordance.
-              </p>
-              <div className="grid md:grid-cols-3 gap-4 mt-5">
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Tidak Tereliminasi</p>
-                  <p className="mt-1 text-2xl font-extrabold text-warm-ink">
-                    {result.rankingDetails.notEliminatedCount}
-                  </p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Metode Ranking</p>
-                  <p className="mt-1 text-base font-extrabold text-warm-ink">
-                    {result.rankingMethod}
-                  </p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-warm-muted">Aturan Selisih</p>
-                  <p className="mt-1 text-base font-extrabold text-warm-ink">
-                    Total C - Total D
-                  </p>
-                </div>
-              </div>
-              <div className="mt-6 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-warm-taupe">
-                      <th className="px-3 py-3 text-left text-warm-muted">Alternatif</th>
-                      <th className="px-3 py-3 text-center text-warm-muted">Dominasi</th>
-                      <th className="px-3 py-3 text-center text-warm-muted">Didominasi</th>
-                      <th className="px-3 py-3 text-center text-warm-muted">Status</th>
-                      <th className="px-3 py-3 text-center text-warm-muted">Skor C-D</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {result.rankingDetails.scores.map((score) => (
-                      <tr key={score.index} className="border-b border-warm-taupe">
-                        <td className="px-3 py-3 font-semibold text-warm-ink">
-                          {altNames[score.index]}
-                        </td>
-                        <td className="px-3 py-3 text-center text-warm-muted">
-                          {score.dominates}
-                        </td>
-                        <td className="px-3 py-3 text-center text-warm-muted">
-                          {score.dominatedBy}
-                        </td>
-                        <td className="py-3 px-3 text-center">
-                          <span
-                            className={`inline-flex border px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] ${
-                              score.isEliminated
-                                ? "border-warm-coral bg-warm-white text-warm-coral"
-                                : "border-warm-taupe bg-warm-sand text-warm-ink"
-                            }`}
-                          >
-                            {score.isEliminated ? "Tereliminasi" : "Lolos"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-3 text-center font-semibold text-warm-ink">
-                          {formatNumber(score.preferenceScore, 3)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="border border-warm-taupe bg-warm-white p-6">
-              <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">
-                Alur Perhitungan ELECTRE
-              </h4>
-              <div className="grid gap-4 text-sm leading-[1.6] text-warm-muted md:grid-cols-2">
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="font-bold text-warm-ink">1. Normalisasi</p>
-                  <p>Setiap nilai dibagi akar jumlah kuadrat pada kolom kriterianya.</p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="font-bold text-warm-ink">2. Pembobotan</p>
-                  <p>Nilai normalisasi dikalikan bobot input pada setiap kriteria.</p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="font-bold text-warm-ink">3. Concordance dan Discordance</p>
-                  <p>Setiap alternatif dibandingkan berpasangan berdasarkan tipe benefit/cost.</p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="font-bold text-warm-ink">4. Dominance dan Ranking</p>
-                  <p>F dan G digabung menjadi E. Jika kandidat lolos lebih dari satu, digunakan skor C-D.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              <MatrixTable title="Normalized Matrix" matrix={result.normalized} />
-              <MatrixTable title="Weighted Matrix" matrix={result.weighted} tone="cyan" />
-              <MatrixTable title="Concordance Matrix" matrix={result.concordanceMatrix} digits={2} />
-              <MatrixTable title="Discordance Matrix" matrix={result.discordanceMatrix} tone="cyan" />
+            <div className="grid gap-8 md:grid-cols-2">
+              <MatrixTable title="Matriks Normalisasi (R)" matrix={result.normalized} labels={paperCriterionLabels} />
+              <MatrixTable title="Matriks Terbobot (V)" matrix={result.weighted} labels={paperCriterionLabels} />
+              <MatrixTable title="Matriks Concordance (C)" matrix={result.concordanceMatrix} digits={2} />
+              <MatrixTable title="Matriks Discordance (D)" matrix={result.discordanceMatrix} digits={2} />
               <MatrixTable title="Dominan Concordance (F)" matrix={result.concordanceDominanceMatrix} digits={0} />
-              <MatrixTable title="Dominan Discordance (G)" matrix={result.discordanceDominanceMatrix} digits={0} tone="cyan" />
+              <MatrixTable title="Dominan Discordance (G)" matrix={result.discordanceDominanceMatrix} digits={0} />
             </div>
 
             <MatrixTable title="Aggregate Dominance Matrix (E)" matrix={result.dominanceMatrix} digits={0} />
 
-            {/* Thresholds */}
-            <div className="border border-warm-taupe bg-warm-white p-6">
-              <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-warm-ink">Threshold</h4>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="text-sm text-warm-muted">Concordance Threshold</p>
-                  <p className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
-                    {result.thresholds.concordance.toFixed(3)}
-                  </p>
-                </div>
-                <div className="border border-warm-taupe bg-warm-sand p-4">
-                  <p className="text-sm text-warm-muted">Discordance Threshold</p>
-                  <p className="mt-2 text-3xl font-extrabold tracking-[-0.04em] text-warm-ink">
-                    {result.thresholds.discordance.toFixed(3)}
-                  </p>
-                </div>
-              </div>
+            <div className="overflow-x-auto border border-cloud-line bg-cloud-panel p-6">
+              <h4 className="mb-4 text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+                Jumlah Dominasi
+              </h4>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-cloud-line text-cloud-muted">
+                    <th className="p-3 text-left">Alternatif</th>
+                    <th className="p-3 text-center">Jumlah nilai 1 pada baris E</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dominanceRows.map((row) => (
+                    <tr key={row.index} className="border-b border-cloud-line">
+                      <td className="p-3 font-bold text-cloud-ink">
+                        {activeNames[row.index]}
+                      </td>
+                      <td className="p-3 text-center text-cloud-muted">{row.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </motion.div>
         )}
