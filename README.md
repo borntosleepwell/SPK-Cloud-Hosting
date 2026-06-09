@@ -4,7 +4,7 @@ Sistem Pendukung Keputusan berbasis metode ELECTRE untuk membantu evaluasi kelay
 
 ## Demo
 
-- Live App: https://borntosleepwell.github.io/spk-electre-react/
+- Live App: https://borntosleepwell.github.io/SPK-Cloud-Hosting/
 
 ## Fitur
 
