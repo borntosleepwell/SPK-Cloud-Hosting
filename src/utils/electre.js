@@ -26,6 +26,49 @@ export const weightedMatrix = (normalizedMatrix, weights) => {
   );
 };
 
+export const calculateOutrankingSets = (
+  weightedMatrix,
+  costBenefit = [],
+  criterionCodes = []
+) => {
+  const n = weightedMatrix.length;
+  const k = weightedMatrix[0]?.length ?? 0;
+  const sets = [];
+
+  for (let p = 0; p < n; p++) {
+    for (let q = 0; q < n; q++) {
+      if (p !== q) {
+        const concordance = [];
+        const discordance = [];
+
+        for (let i = 0; i < k; i++) {
+          const code = criterionCodes[i] ?? `C${i + 1}`;
+          const isBenefit = costBenefit[i] !== "cost";
+          const isAtLeastAsGood = isBenefit
+            ? weightedMatrix[p][i] >= weightedMatrix[q][i]
+            : weightedMatrix[p][i] <= weightedMatrix[q][i];
+
+          if (isAtLeastAsGood) {
+            concordance.push(code);
+          } else {
+            discordance.push(code);
+          }
+        }
+
+        sets.push({
+          pair: `A${p + 1}, A${q + 1}`,
+          from: p,
+          to: q,
+          concordance,
+          discordance,
+        });
+      }
+    }
+  }
+
+  return sets;
+};
+
 // Hitung concordance matrix
 export const calculateConcordance = (weightedMatrix, weights, costBenefit = []) => {
   const n = weightedMatrix.length;
@@ -193,6 +236,7 @@ export const calculateELECTRE = (
 
   const normalized = normalizeMatrix(decisionMatrix);
   const weighted = weightedMatrix(normalized, weights);
+  const outrankingSets = calculateOutrankingSets(weighted, cb);
 
   const concordanceMatrix = calculateConcordance(weighted, weights, cb);
   const discordanceMatrix = calculateDiscordance(weighted, cb);
@@ -227,6 +271,7 @@ export const calculateELECTRE = (
   return {
     normalized,
     weighted,
+    outrankingSets,
     concordanceMatrix,
     discordanceMatrix,
     concordanceDominanceMatrix,

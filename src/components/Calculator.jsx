@@ -69,6 +69,80 @@ function MatrixTable({ title, matrix, labels, digits = 3 }) {
   );
 }
 
+function CriterionChips({ items, tone }) {
+  if (!items.length) {
+    return <span className="text-cloud-muted">-</span>;
+  }
+
+  const toneClass =
+    tone === "discordance"
+      ? "border-cloud-accent/40 bg-orange-50 text-cloud-accent"
+      : "border-cloud-primary/30 bg-cloud-soft text-cloud-primary";
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((item) => (
+        <span
+          key={item}
+          className={`inline-flex border px-2 py-1 text-xs font-extrabold ${toneClass}`}
+        >
+          {item}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function OutrankingSetsTable({ sets, alternativeNames }) {
+  if (!sets?.length) return null;
+
+  return (
+    <div className="overflow-x-auto border border-cloud-line bg-cloud-panel p-6">
+      <div className="mb-5">
+        <h4 className="text-sm font-extrabold uppercase tracking-[0.14em] text-cloud-ink">
+          Himpunan Concordance dan Discordance
+        </h4>
+        <p className="mt-2 text-sm leading-[1.6] text-cloud-muted">
+          Setiap baris menunjukkan kriteria yang mendukung atau menolak klaim
+          bahwa alternatif pertama mengungguli alternatif kedua.
+        </p>
+      </div>
+      <table className="w-full min-w-[760px] text-sm">
+        <thead>
+          <tr className="border-b border-cloud-line text-left text-cloud-muted">
+            <th className="p-3">Kode</th>
+            <th className="p-3">Perbandingan</th>
+            <th className="p-3">Concordance</th>
+            <th className="p-3">Discordance</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sets.map((set) => (
+            <tr key={`${set.from}-${set.to}`} className="border-b border-cloud-line">
+              <td className="p-3 font-extrabold text-cloud-ink">{set.pair}</td>
+              <td className="p-3 text-cloud-muted">
+                <span className="font-bold text-cloud-ink">
+                  {alternativeNames[set.from] ?? `A${set.from + 1}`}
+                </span>
+                <span className="px-2 text-cloud-accent">vs</span>
+                <span className="font-bold text-cloud-ink">
+                  {alternativeNames[set.to] ?? `A${set.to + 1}`}
+                </span>
+              </td>
+              <td className="p-3">
+                <CriterionChips items={set.concordance} tone="concordance" />
+              </td>
+              <td className="p-3">
+                <CriterionChips items={set.discordance} tone="discordance" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function Calculator() {
   const [mode, setMode] = useState("paper");
   const [alternatives, setAlternatives] = useState(5);
@@ -416,6 +490,14 @@ export default function Calculator() {
             <div className="grid gap-8 md:grid-cols-2">
               <MatrixTable title="Matriks Normalisasi (R)" matrix={result.normalized} labels={paperCriterionLabels} />
               <MatrixTable title="Matriks Terbobot (V)" matrix={result.weighted} labels={paperCriterionLabels} />
+            </div>
+
+            <OutrankingSetsTable
+              sets={result.outrankingSets}
+              alternativeNames={activeNames}
+            />
+
+            <div className="grid gap-8 md:grid-cols-2">
               <MatrixTable title="Matriks Concordance (C)" matrix={result.concordanceMatrix} digits={2} />
               <MatrixTable title="Matriks Discordance (D)" matrix={result.discordanceMatrix} digits={2} />
               <MatrixTable title="Dominan Concordance (F)" matrix={result.concordanceDominanceMatrix} digits={0} />
