@@ -19,6 +19,17 @@ export const normalizeMatrix = (matrix) => {
   );
 };
 
+export const normalizeWeights = (weights) => {
+  if (!weights.length) return [];
+
+  const numericWeights = weights.map((weight) => Number(weight));
+  const totalWeight = numericWeights.reduce((sum, weight) => sum + weight, 0);
+
+  return totalWeight > EPSILON
+    ? numericWeights.map((weight) => weight / totalWeight)
+    : numericWeights.map(() => 0);
+};
+
 // Pembobotan matriks ternormalisasi
 export const weightedMatrix = (normalizedMatrix, weights) => {
   return normalizedMatrix.map((row) =>
@@ -203,10 +214,12 @@ export const calculateELECTRE = (
   // Default: semua benefit
   const cb = costBenefit.length > 0 ? costBenefit : Array(k).fill("benefit");
 
-  const normalized = normalizeMatrix(decisionMatrix);
-  const weighted = weightedMatrix(normalized, weights);
+  const normalizedWeights = normalizeWeights(weights);
 
-  const concordanceMatrix = calculateConcordance(weighted, weights, cb);
+  const normalized = normalizeMatrix(decisionMatrix);
+  const weighted = weightedMatrix(normalized, normalizedWeights);
+
+  const concordanceMatrix = calculateConcordance(weighted, normalizedWeights, cb);
   const discordanceMatrix = calculateDiscordance(weighted, cb);
 
   // Threshold default
@@ -237,6 +250,7 @@ export const calculateELECTRE = (
   );
 
   return {
+    normalizedWeights,
     normalized,
     weighted,
     concordanceMatrix,
