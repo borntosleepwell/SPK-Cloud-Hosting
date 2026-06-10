@@ -1,30 +1,75 @@
-# SPK Credit Scoring - ELECTRE
+# SPK Pemilihan VPS Cloud - ELECTRE
 
-Sistem Pendukung Keputusan berbasis metode ELECTRE untuk membantu evaluasi kelayakan kredit berdasarkan beberapa kriteria. Aplikasi ini menyediakan dokumentasi metode, input data alternatif dan kriteria, serta hasil perhitungan dalam bentuk matriks dan ranking.
+Aplikasi Sistem Pendukung Keputusan (SPK) berbasis metode ELECTRE untuk memilih layanan Web Hosting VPS Cloud terbaik. Project ini mengikuti studi kasus paper SENIFORMA 2026 dengan membandingkan Hostinger, Dewaweb, IDCloudHost, DomaiNesia, dan Rumahweb berdasarkan harga serta spesifikasi layanan.
 
 ## Demo
 
 - Live App: https://borntosleepwell.github.io/SPK-Cloud-Hosting/
 
-## Fitur
+## Fitur Utama
 
-- Kalkulator ELECTRE interaktif untuk data alternatif dan kriteria.
-- Perhitungan concordance, discordance, threshold, dan ranking.
-- Dokumentasi singkat tahapan metode ELECTRE.
-- Generate data dummy untuk percobaan cepat.
-- Antarmuka responsif untuk desktop dan mobile.
+- Studi kasus paper pemilihan Web Hosting VPS Cloud.
+- Mode **Data Paper** untuk memuat dataset dan hasil perhitungan sesuai paper.
+- Mode **Kalkulator Manual** untuk mengubah jumlah alternatif, nama alternatif, dan nilai matriks keputusan.
+- Perhitungan ELECTRE lengkap: normalisasi, pembobotan, himpunan concordance/discordance, matriks concordance, matriks discordance, matriks dominan, aggregate dominance matrix, dan ranking.
+- Dokumentasi interaktif tahapan metode ELECTRE dengan rumus perhitungan.
+- Tampilan responsif dengan animasi dan visual hero.
+
+## Studi Kasus
+
+Project ini menggunakan 5 alternatif provider VPS Cloud:
+
+| Kode | Alternatif |
+| --- | --- |
+| A1 | Hostinger |
+| A2 | Dewaweb |
+| A3 | IDCloudHost |
+| A4 | DomaiNesia |
+| A5 | Rumahweb |
+
+Kriteria yang digunakan:
+
+| Kode | Kriteria | Bobot | Jenis | Satuan |
+| --- | --- | --- | --- | --- |
+| C1 | Harga sewa bulanan | 30% | Cost | ribu Rp |
+| C2 | Kapasitas RAM | 25% | Benefit | GB |
+| C3 | Kapasitas storage | 20% | Benefit | GB |
+| C4 | Jumlah vCPU | 15% | Benefit | Core |
+| C5 | Jenis storage | 10% | Benefit | Skor |
+
+Konversi jenis storage:
+
+- SSD SATA = 2
+- NVMe SSD = 3
+
+Berdasarkan data paper, DomaiNesia (A4) menjadi alternatif terbaik karena memiliki jumlah dominasi tertinggi pada Aggregate Dominance Matrix.
+
+## Metode ELECTRE
+
+ELECTRE (Elimination and Choice Translating Reality) adalah metode pengambilan keputusan multi-kriteria berbasis outranking. Aplikasi ini menjalankan tahapan berikut:
+
+1. Menyusun matriks keputusan.
+2. Melakukan normalisasi matriks dengan vector normalization.
+3. Mengalikan matriks normalisasi dengan bobot kriteria.
+4. Membentuk himpunan dan matriks concordance.
+5. Membentuk himpunan dan matriks discordance.
+6. Menghitung threshold concordance dan discordance.
+7. Membentuk matriks dominan concordance dan discordance.
+8. Membentuk Aggregate Dominance Matrix.
+9. Menentukan ranking alternatif berdasarkan jumlah dominasi.
 
 ## Tech Stack
 
-- React
+- React 19
 - Vite
 - Tailwind CSS
 - Framer Motion
 - JavaScript ES Modules
+- MathJax untuk rendering rumus pada dokumentasi
 
 ## Menjalankan Project
 
-Pastikan Node.js sudah terpasang, lalu jalankan:
+Pastikan Node.js dan npm sudah terpasang, lalu jalankan:
 
 ```bash
 git clone https://github.com/borntosleepwell/spk-electre-react.git
@@ -33,7 +78,7 @@ npm install
 npm run dev
 ```
 
-Aplikasi akan berjalan di:
+Aplikasi development akan berjalan di:
 
 ```bash
 http://localhost:5173
@@ -44,45 +89,54 @@ http://localhost:5173
 ```bash
 npm run dev       # Menjalankan development server
 npm run build     # Membuat production build
-npm run preview   # Preview hasil build
+npm run preview   # Preview hasil production build
 npm run lint      # Menjalankan ESLint
+npm run deploy    # Deploy folder dist ke GitHub Pages
 ```
 
 ## Struktur Project
 
 ```text
 spk-electre-react/
++-- public/
 +-- src/
 |   +-- assets/
+|   |   +-- hero.png
 |   +-- components/
 |   |   +-- Calculator.jsx
 |   |   +-- Documentation.jsx
 |   |   +-- Hero.jsx
 |   |   +-- Navbar.jsx
+|   +-- data/
+|   |   +-- paperCase.js
 |   +-- utils/
 |   |   +-- electre.js
 |   +-- App.jsx
 |   +-- index.css
 |   +-- main.jsx
-+-- public/
++-- index.html
 +-- package.json
 +-- tailwind.config.js
 +-- vite.config.js
 ```
 
-## Metode ELECTRE
+## Build dan Deployment
 
-ELECTRE (Elimination and Choice Translating Reality) adalah metode pengambilan keputusan multi-kriteria yang membandingkan alternatif berdasarkan hubungan dominasi. Tahapan utama yang digunakan dalam aplikasi ini meliputi normalisasi matriks, pembobotan kriteria, pembentukan matriks concordance dan discordance, perhitungan dominasi, lalu penentuan ranking alternatif.
-
-## Deployment
-
-Project ini dapat di-build menjadi file statis dengan:
+Buat production build dengan:
 
 ```bash
 npm run build
 ```
 
-Hasil build tersedia di folder `dist/` dan dapat di-deploy ke GitHub Pages atau layanan static hosting lainnya.
+Hasil build akan tersimpan di folder `dist/`.
+
+Untuk deploy ke GitHub Pages:
+
+```bash
+npm run deploy
+```
+
+Script deploy akan menjalankan build terlebih dahulu melalui `predeploy`, lalu mengirim folder `dist/` menggunakan package `gh-pages`.
 
 ## Author
 

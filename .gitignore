@@ -23,3 +23,22 @@ claude.md
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Test / coverage
+coverage/
+
+# Build/cache
+.vite/
+.cache/
+
+# Hosting
+.vercel/
+.netlify/
+
+# Windows
+Thumbs.db
