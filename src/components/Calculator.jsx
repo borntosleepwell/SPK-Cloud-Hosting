@@ -14,6 +14,8 @@ import {
 const STORAGE_SCORE_CRITERION_INDEX = 4;
 const STORAGE_SCORE_OPTIONS = [3, 5];
 
+// Menjaga input C5 manual hanya berada pada skor kategori yang diizinkan.
+// Nilai di luar daftar dikembalikan ke pilihan pertama sebagai nilai aman.
 const normalizeStorageScore = (value) => {
   const numericValue = Number(value);
   return STORAGE_SCORE_OPTIONS.includes(numericValue)
@@ -170,6 +172,8 @@ export default function Calculator() {
   const activeMatrix = isPaperMode ? paperMatrix : matrix;
   const activeNames = isPaperMode ? paperAlternativeNames : altNames;
 
+  // Ringkasan jumlah nilai 1 pada setiap baris Aggregate Dominance Matrix (E).
+  // Nilai ini ditampilkan sebagai jumlah dominasi dan menjadi dasar utama ranking.
   const dominanceRows = useMemo(
     () =>
       (result?.dominanceMatrix ?? []).map((row, index) => ({
@@ -179,8 +183,8 @@ export default function Calculator() {
     [result]
   );
 
-  // Mode paper memakai data dan hasil yang sudah dicantumkan pada paper,
-  // sedangkan mode manual menghitung ulang dari input pengguna.
+  // Mode paper memakai data studi kasus yang tetap, sedangkan mode manual
+  // memberi kebebasan mengubah alternatif sebelum dihitung dengan rumus yang sama.
   const switchMode = (nextMode) => {
     setMode(nextMode);
     if (nextMode === "paper") {
@@ -211,6 +215,8 @@ export default function Calculator() {
   };
 
   const handleMatrixChange = (altIdx, critIdx, value) => {
+    // Input HTML biasa disimpan sementara sebagai string. Khusus C5 langsung
+    // dinormalisasi karena nilainya merupakan kategori, bukan angka bebas.
     const nextValue =
       critIdx === STORAGE_SCORE_CRITERION_INDEX
         ? normalizeStorageScore(value)
@@ -227,6 +233,7 @@ export default function Calculator() {
   };
 
   const handleMatrixBlur = (altIdx, critIdx) => {
+    // Mencegah sel kosong masuk ke perhitungan sebagai NaN.
     setMatrix((currentMatrix) =>
       currentMatrix.map((row, i) =>
         i === altIdx
@@ -252,6 +259,7 @@ export default function Calculator() {
         // bukan mengambil matriks hasil lama yang dihitung sebagai benefit.
         setResult(calculateELECTRE(paperMatrix, paperWeights, paperCostBenefit));
       } else {
+        // Semua nilai form diubah ke Number tepat sebelum masuk ke algoritma.
         const numericMatrix = matrix.map((row) =>
           row.map((value, critIdx) =>
             critIdx === STORAGE_SCORE_CRITERION_INDEX

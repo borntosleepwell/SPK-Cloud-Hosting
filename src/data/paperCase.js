@@ -1,3 +1,5 @@
+// Metadata kriteria menjadi satu sumber untuk label, bobot, dan arah preferensi.
+// C1 adalah cost: harga lebih kecil lebih baik. C2-C5 adalah benefit: nilai lebih besar lebih baik.
 export const paperCriteria = [
   {
     code: "C1",
@@ -36,6 +38,8 @@ export const paperCriteria = [
   },
 ];
 
+// Urutan setiap values harus sama dengan urutan C1-C5 pada paperCriteria.
+// Harga disimpan dalam ribuan rupiah; perubahan skala seragam tidak mengubah normalisasi vektor.
 export const paperAlternatives = [
   {
     code: "A1",
@@ -64,11 +68,13 @@ export const paperAlternatives = [
   },
 ];
 
+// Keterangan konversi jenis storage pada data studi kasus paper.
 export const storageScoreNotes = [
   "SSD SATA = 2",
   "NVMe SSD = 3",
 ];
 
+// Nilai turunan ini mencegah bobot, tipe, label, dan matriks ditulis ulang di komponen.
 export const paperWeights = paperCriteria.map((criterion) => criterion.weight);
 export const paperCostBenefit = paperCriteria.map((criterion) => criterion.type);
 export const paperCriterionLabels = paperCriteria.map(
