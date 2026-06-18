@@ -12,9 +12,25 @@ import {
   storageScoreNotes,
 } from "../data/paperCase";
 
+const STORAGE_SCORE_CRITERION_INDEX = 4;
+const STORAGE_SCORE_OPTIONS = [3, 5];
+
+const normalizeStorageScore = (value) => {
+  const numericValue = Number(value);
+  return STORAGE_SCORE_OPTIONS.includes(numericValue)
+    ? numericValue
+    : STORAGE_SCORE_OPTIONS[0];
+};
+
 const createMatrix = (rowCount, existingMatrix = []) =>
   Array.from({ length: rowCount }, (_, rowIdx) =>
-    paperCriteria.map((_, colIdx) => existingMatrix[rowIdx]?.[colIdx] ?? 0)
+    paperCriteria.map((_, colIdx) => {
+      const currentValue = existingMatrix[rowIdx]?.[colIdx];
+      if (colIdx === STORAGE_SCORE_CRITERION_INDEX) {
+        return normalizeStorageScore(currentValue);
+      }
+      return currentValue ?? 0;
+    })
   );
 
 const resizeList = (length, existingList) =>
@@ -164,6 +180,8 @@ export default function Calculator() {
     [result]
   );
 
+  // Mode paper memakai data dan hasil yang sudah dicantumkan pada paper,
+  // sedangkan mode manual menghitung ulang dari input pengguna.
   const switchMode = (nextMode) => {
     setMode(nextMode);
     if (nextMode === "paper") {
@@ -176,6 +194,8 @@ export default function Calculator() {
     setResult(null);
   };
 
+  // Jumlah alternatif manual dibatasi 2-10 agar tabel tetap mudah dibaca
+  // dan struktur matriks selalu mengikuti lima kriteria paper.
   const handleAlternativeCountChange = (value) => {
     const nextAlternatives = Math.min(10, Math.max(2, parseInt(value) || 2));
     setAlternatives(nextAlternatives);
@@ -192,10 +212,15 @@ export default function Calculator() {
   };
 
   const handleMatrixChange = (altIdx, critIdx, value) => {
+    const nextValue =
+      critIdx === STORAGE_SCORE_CRITERION_INDEX
+        ? normalizeStorageScore(value)
+        : value;
+
     setMatrix((currentMatrix) =>
       currentMatrix.map((row, i) =>
         i === altIdx
-          ? row.map((val, j) => (j === critIdx ? value : val))
+          ? row.map((val, j) => (j === critIdx ? nextValue : val))
           : row
       )
     );
@@ -206,12 +231,20 @@ export default function Calculator() {
     setMatrix((currentMatrix) =>
       currentMatrix.map((row, i) =>
         i === altIdx
-          ? row.map((val, j) => (j === critIdx && val === "" ? 0 : val))
+          ? row.map((val, j) => {
+              if (j !== critIdx) return val;
+              if (j === STORAGE_SCORE_CRITERION_INDEX) {
+                return normalizeStorageScore(val);
+              }
+              return val === "" ? 0 : val;
+            })
           : row
       )
     );
   };
 
+  // Titik eksekusi utama tombol "Hitung ELECTRE".
+  // Pada mode manual, input string dari form dikonversi dulu menjadi angka sebelum dihitung.
   const handleCalculate = async () => {
     setLoading(true);
     try {
@@ -219,7 +252,11 @@ export default function Calculator() {
         setResult(paperPublishedResult);
       } else {
         const numericMatrix = matrix.map((row) =>
-          row.map((value) => Number(value) || 0)
+          row.map((value, critIdx) =>
+            critIdx === STORAGE_SCORE_CRITERION_INDEX
+              ? normalizeStorageScore(value)
+              : Number(value) || 0
+          )
         );
         setMatrix(numericMatrix);
         setResult(calculateELECTRE(numericMatrix, paperWeights, paperCostBenefit));
@@ -230,13 +267,16 @@ export default function Calculator() {
     setLoading(false);
   };
 
+  // Mengisi kalkulator manual dengan alternatif paper agar pengguna bisa
+  // membandingkan hasil input manual dengan studi kasus asli.
   const handleLoadPaperAlternatives = () => {
     setAlternatives(5);
-    setMatrix(paperMatrix);
+    setMatrix(createMatrix(5, paperMatrix));
     setAltNames(paperAlternativeNames);
     setResult(null);
   };
 
+  // Mengosongkan nilai matriks tanpa mengubah nama/jumlah alternatif.
   const handleClearInput = () => {
     setMatrix(createMatrix(alternatives));
     setResult(null);
@@ -337,6 +377,10 @@ export default function Calculator() {
           </table>
           <p className="mt-4 text-sm text-cloud-muted">
             Konversi C5: {storageScoreNotes.join(", ")}.
+            {!isPaperMode &&
+              ` Pada kalkulator manual, C5 hanya dapat dipilih ${STORAGE_SCORE_OPTIONS.join(
+                " atau "
+              )}.`}
           </p>
         </div>
 
@@ -411,16 +455,32 @@ export default function Calculator() {
                           {formatNumber(val, critIdx === 0 ? 1 : 0)}
                         </span>
                       ) : (
-                        <input
-                          type="number"
-                          value={val}
-                          onFocus={(event) => event.target.select()}
-                          onBlur={() => handleMatrixBlur(altIdx, critIdx)}
-                          onChange={(event) =>
-                            handleMatrixChange(altIdx, critIdx, event.target.value)
-                          }
-                          className="w-full border border-cloud-line bg-white px-3 py-2 text-center text-cloud-ink focus:border-cloud-primary focus:outline-none"
-                        />
+                        critIdx === STORAGE_SCORE_CRITERION_INDEX ? (
+                          <select
+                            value={normalizeStorageScore(val)}
+                            onChange={(event) =>
+                              handleMatrixChange(altIdx, critIdx, event.target.value)
+                            }
+                            className="w-full border border-cloud-line bg-white px-3 py-2 text-center text-cloud-ink focus:border-cloud-primary focus:outline-none"
+                          >
+                            {STORAGE_SCORE_OPTIONS.map((score) => (
+                              <option key={score} value={score}>
+                                {score}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <input
+                            type="number"
+                            value={val}
+                            onFocus={(event) => event.target.select()}
+                            onBlur={() => handleMatrixBlur(altIdx, critIdx)}
+                            onChange={(event) =>
+                              handleMatrixChange(altIdx, critIdx, event.target.value)
+                            }
+                            className="w-full border border-cloud-line bg-white px-3 py-2 text-center text-cloud-ink focus:border-cloud-primary focus:outline-none"
+                          />
+                        )
                       )}
                     </td>
                   ))}

@@ -1,6 +1,7 @@
 const EPSILON = 1e-12;
 
-// Normalisasi matriks keputusan dengan vector normalization per kriteria.
+// Menyamakan skala semua kriteria dengan vector normalization.
+// Tahap ini penting karena harga, RAM, storage, vCPU, dan skor storage punya satuan berbeda.
 export const normalizeMatrix = (matrix) => {
   if (!matrix.length || !matrix[0]?.length) return [];
 
@@ -19,7 +20,8 @@ export const normalizeMatrix = (matrix) => {
   );
 };
 
-// Pembobotan matriks ternormalisasi
+// Mengalikan nilai normalisasi dengan bobot kriteria dari paper.
+// Hasilnya menjadi matriks V yang dipakai untuk perbandingan antar alternatif.
 export const weightedMatrix = (normalizedMatrix, weights) => {
   return normalizedMatrix.map((row) =>
     row.map((val, i) => val * Number(weights[i]))
@@ -44,6 +46,8 @@ export const calculateOutrankingSets = (
         for (let i = 0; i < k; i++) {
           const code = criterionCodes[i] ?? `C${i + 1}`;
           const isBenefit = costBenefit[i] !== "cost";
+          // Benefit dianggap lebih baik jika nilainya lebih besar, sedangkan cost
+          // seperti harga dianggap lebih baik jika nilainya lebih kecil.
           const isAtLeastAsGood = isBenefit
             ? weightedMatrix[p][i] >= weightedMatrix[q][i]
             : weightedMatrix[p][i] <= weightedMatrix[q][i];
@@ -69,7 +73,8 @@ export const calculateOutrankingSets = (
   return sets;
 };
 
-// Hitung concordance matrix
+// Menghitung matriks concordance C.
+// C[p][q] adalah total bobot kriteria yang mendukung alternatif p mengungguli q.
 export const calculateConcordance = (weightedMatrix, weights, costBenefit = []) => {
   const n = weightedMatrix.length;
   const k = weightedMatrix[0]?.length ?? 0;
@@ -98,7 +103,8 @@ export const calculateConcordance = (weightedMatrix, weights, costBenefit = []) 
   return concordance;
 };
 
-// Hitung discordance matrix
+// Menghitung matriks discordance D.
+// D[p][q] mengukur seberapa kuat kriteria yang menolak dominasi p terhadap q.
 export const calculateDiscordance = (weightedMatrix, costBenefit = []) => {
   const n = weightedMatrix.length;
   const k = weightedMatrix[0]?.length ?? 0;
@@ -148,6 +154,7 @@ export const calculateConcordanceDominance = (
   for (let p = 0; p < n; p++) {
     for (let q = 0; q < n; q++) {
       if (p !== q && concordance[p][q] >= concordanceThreshold) {
+        // Nilai 1 berarti dukungan concordance melewati ambang rata-rata.
         dominant[p][q] = 1;
       }
     }
@@ -167,6 +174,7 @@ export const calculateDiscordanceDominance = (
   for (let p = 0; p < n; p++) {
     for (let q = 0; q < n; q++) {
       if (p !== q && discordance[p][q] <= discordanceThreshold) {
+        // Nilai discordance yang lebih kecil/sama threshold berarti penolakannya masih dapat diterima.
         dominant[p][q] = 1;
       }
     }
@@ -181,8 +189,8 @@ export const calculateDominance = (concordanceDominance, discordanceDominance) =
   );
 };
 
-// Hitung ranking dengan aturan eliminasi ELECTRE.
-// Jika kandidat tidak tereliminasi lebih dari satu, gunakan selisih total C-D.
+// Menyusun ranking dari Aggregate Dominance Matrix.
+// Alternatif yang banyak mendominasi alternatif lain ditempatkan lebih tinggi.
 export const calculateRankingDetails = (dominance, concordance, discordance) => {
   const scores = dominance.map((row, idx) => {
     const dominates = row.reduce((sum, val) => sum + val, 0);
@@ -223,7 +231,8 @@ export const calculateRanking = (dominance, concordance, discordance) => {
   return calculateRankingDetails(dominance, concordance, discordance).ranking;
 };
 
-// Main ELECTRE calculation
+// Orkestrator utama seluruh tahapan ELECTRE dari matriks keputusan sampai ranking.
+// Fungsi ini dipanggil kalkulator manual agar alur perhitungan tetap satu pintu.
 export const calculateELECTRE = (
   decisionMatrix,
   weights,
@@ -241,7 +250,8 @@ export const calculateELECTRE = (
   const concordanceMatrix = calculateConcordance(weighted, weights, cb);
   const discordanceMatrix = calculateDiscordance(weighted, cb);
 
-  // Threshold default
+  // Threshold memakai rata-rata nilai non-diagonal, sesuai langkah umum ELECTRE
+  // untuk mengubah matriks C dan D menjadi matriks dominan biner.
   const concThreshold =
     concordanceMatrix.flat().reduce((a, b) => a + b, 0) /
     (concordanceMatrix.length * (concordanceMatrix.length - 1));

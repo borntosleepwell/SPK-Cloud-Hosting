@@ -2,7 +2,7 @@ export const paperCriteria = [
   {
     code: "C1",
     name: "Harga sewa bulanan",
-    unit: "ribu Rp",
+    unit: "Rp",
     weight: 0.3,
     type: "cost",
   },
