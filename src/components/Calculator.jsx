@@ -7,7 +7,6 @@ import {
   paperCriteria,
   paperCriterionLabels,
   paperMatrix,
-  paperPublishedResult,
   paperWeights,
   storageScoreNotes,
 } from "../data/paperCase";
@@ -249,7 +248,9 @@ export default function Calculator() {
     setLoading(true);
     try {
       if (isPaperMode) {
-        setResult(paperPublishedResult);
+        // Data paper dihitung ulang agar C1 selalu diperlakukan sebagai cost,
+        // bukan mengambil matriks hasil lama yang dihitung sebagai benefit.
+        setResult(calculateELECTRE(paperMatrix, paperWeights, paperCostBenefit));
       } else {
         const numericMatrix = matrix.map((row) =>
           row.map((value, critIdx) =>
